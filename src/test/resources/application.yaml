@@ -1,0 +1,41 @@
+server:
+  compression:
+    enabled: true
+    min-response-size: 1024
+
+spring:
+  application:
+    name: '@project.name@'
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/atida-java
+    username: postgres
+    password: postgres
+  jpa:
+    open-in-view: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQL95Dialect
+        generate_statistics: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 10
+        temp:
+          use_jdbc_metadata_defaults: false
+        jdbc:
+          batch_size: 20
+          order_updates: true
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    root: info
+    org.hibernate: info
+    org.hibernate.SQL: debug
+    org.hibernate.engine: warn
+    org.hibernate.SQL_SLOW: info
+    org.hibernate.cache: debug
+    com.lassis: debug

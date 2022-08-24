@@ -1,0 +1,7 @@
+crud:
+  base-path: '/api'
+  endpoints:
+    - path: '/products'
+      entity-class: com.lassis.springframework.crud.entity.Product
+      dto-class: com.lassis.springframework.crud.entity.Product
+      id-class: java.lang.Long
