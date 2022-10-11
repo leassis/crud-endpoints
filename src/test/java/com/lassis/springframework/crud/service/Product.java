@@ -1,5 +1,6 @@
-package com.lassis.springframework.crud.entity;
+package com.lassis.springframework.crud.service;
 
+import com.lassis.springframework.crud.entity.WithId;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

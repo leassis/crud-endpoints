@@ -1,8 +1,10 @@
 package com.lassis.springframework.crud;
 
+import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
-import com.lassis.springframework.crud.entity.Product;
 import com.lassis.springframework.crud.service.CrudService;
+import com.lassis.springframework.crud.service.Product;
+import com.lassis.springframework.crud.service.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnableCrud
 @EnableJpaRepositories
 @EnableWebMvc
-@AutoConfigureTestEntityManager
-@AutoConfigureDataJpa
 @EntityScan
 @ComponentScan
-@AutoConfigureMockMvc
 @WebAppConfiguration
+@AutoConfigureTestEntityManager
+@AutoConfigureDataJpa
+@AutoConfigureMockMvc
 class CrudEndpointsTest {
 
     @Autowired
@@ -39,6 +41,9 @@ class CrudEndpointsTest {
 
     @Autowired(required = false)
     CrudService<Product, Long> crudService;
+
+    @Autowired
+    ProductRepository productRepository;
 
     @Test
     void shouldDoAGetRequest() throws Exception {
@@ -51,4 +56,15 @@ class CrudEndpointsTest {
         assertThat(crudService).isNotNull();
     }
 
+    @Test
+    void shouldProductRepository() {
+        assertThat(productRepository).isNotNull();
+
+        String name = Faker.instance().name().firstName();
+        Product product = new Product();
+        product.setName(name);
+        productRepository.save(product);
+
+        assertThat(productRepository.findById(1L)).isPresent();
+    }
 }

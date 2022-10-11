@@ -5,7 +5,7 @@ import lombok.Value;
 import java.util.Set;
 
 @Value
-public class CRUDEndpointsConfig {
+public class CRUDProperties {
     String basePath;
-    Set<CRUDEndpointConfig> endpoints;
+    Set<CRUDPathProperties> endpoints;
 }

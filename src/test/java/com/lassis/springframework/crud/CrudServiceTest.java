@@ -1,9 +1,11 @@
-package com.lassis.springframework.crud.service;
+package com.lassis.springframework.crud;
 
 import com.github.javafaker.Faker;
-import com.lassis.springframework.crud.entity.Product;
 import com.lassis.springframework.crud.exception.NotFoundException;
-import com.lassis.springframework.crud.repository.CRUDRepository;
+import com.lassis.springframework.crud.service.BeforeSave;
+import com.lassis.springframework.crud.service.CrudService;
+import com.lassis.springframework.crud.service.Product;
+import com.lassis.springframework.crud.service.UpdateValuesSetter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.Optional;
 
@@ -32,7 +35,7 @@ class CrudServiceTest {
     static final Faker FAKER = Faker.instance();
 
     @Mock
-    CRUDRepository<Product, Long> repository;
+    PagingAndSortingRepository<Product, Long> repository;
 
     @Mock
     BeforeSave<Product> beforeSave;

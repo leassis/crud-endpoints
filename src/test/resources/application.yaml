@@ -8,25 +8,16 @@ spring:
     name: '@project.name@'
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/atida-java
-    username: postgres
-    password: postgres
+    url: jdbc:h2:mem:mydb
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
   jpa:
-    open-in-view: true
+    open-in-view: false
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQL95Dialect
-        generate_statistics: true
-        session:
-          events:
-            log:
-              LOG_QUERIES_SLOWER_THAN_MS: 10
-        temp:
-          use_jdbc_metadata_defaults: false
-        jdbc:
-          batch_size: 20
-          order_updates: true
+        dialect: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
 
@@ -39,3 +30,16 @@ logging:
     org.hibernate.SQL_SLOW: info
     org.hibernate.cache: debug
     com.lassis: debug
+
+crud:
+  base-path: '/api'
+  endpoints:
+    - path: '/products'
+      entity-class: com.lassis.springframework.crud.service.Product
+      dto-class: com.lassis.springframework.crud.service.Product
+      id-class: java.lang.Long
+      methods:
+        - get
+        - post
+        - put
+        - delete

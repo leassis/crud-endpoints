@@ -4,10 +4,10 @@ import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.exception.CreateNonEmptyIdException;
 import com.lassis.springframework.crud.exception.NotFoundException;
 import com.lassis.springframework.crud.exception.UpdateIdConflictException;
-import com.lassis.springframework.crud.repository.CRUDRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -15,7 +15,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class CrudService<E extends WithId<ID>, ID extends Serializable> {
 
-    private final CRUDRepository<E, ID> repository;
+    private final PagingAndSortingRepository<E, ID> repository;
     private final BeforeSave<E> beforeSaveAction;
     private final UpdateValuesSetter<E> updateSetter;
 
@@ -45,10 +45,10 @@ public class CrudService<E extends WithId<ID>, ID extends Serializable> {
                 .orElseThrow(() -> new NotFoundException(id));
     }
 
-    public WithId<ID> getOnlyId(ID id) {
-        return repository.findSimpleById(id)
-                .orElseThrow(() -> new NotFoundException(id));
-    }
+//    public WithId<ID> getOnlyId(ID id) {
+//        return repository.findSimpleById(id)
+//                .orElseThrow(() -> new NotFoundException(id));
+//    }
 
     public Page<E> findAll(Pageable pageable) {
         if (Objects.isNull(pageable)) {

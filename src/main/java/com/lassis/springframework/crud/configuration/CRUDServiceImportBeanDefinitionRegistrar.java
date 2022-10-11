@@ -1,7 +1,6 @@
 package com.lassis.springframework.crud.configuration;
 
 import com.lassis.springframework.crud.entity.WithId;
-import com.lassis.springframework.crud.repository.CRUDRepository;
 import com.lassis.springframework.crud.service.BeforeSave;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.UpdateValuesSetter;
@@ -14,9 +13,11 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.io.Serializable;
 
+import static java.util.Objects.nonNull;
 import static org.springframework.beans.factory.support.BeanDefinitionBuilder.rootBeanDefinition;
 import static org.springframework.core.ResolvableType.forClassWithGenerics;
 
@@ -26,24 +27,29 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry bdr) {
-        CRUDEndpointsConfig config = EndpointsUtil.getConfig();
+        CRUDProperties config = EndpointsUtil.getConfig();
 
         bdr.registerBeanDefinition("endpointsConfig",
-                rootBeanDefinition(CRUDEndpointsConfig.class, () -> config).getBeanDefinition()
+                rootBeanDefinition(CRUDProperties.class, () -> config).getBeanDefinition()
         );
 
-        for (CRUDEndpointConfig endpoint : config.getEndpoints()) {
-            registryCrudService(bdr, endpoint);
+        for (CRUDPathProperties endpoint : config.getEndpoints()) {
+            registryCrudServiceIfNotRegistered(bdr, endpoint);
         }
     }
 
 
-    private void registryCrudService(BeanDefinitionRegistry bdr, CRUDEndpointConfig endpoint) {
+    private void registryCrudServiceIfNotRegistered(BeanDefinitionRegistry bdr, CRUDPathProperties endpoint) {
+        final BeanFactory bf = (BeanFactory) bdr;
         Class<? extends WithId<? extends Serializable>> clazz = endpoint.getEntityClass();
         Class<? extends Serializable> idClass = endpoint.getIdClass();
 
         ResolvableType crudServiceType = forClassWithGenerics(CrudService.class, clazz, idClass);
-        ResolvableType repositoryType = forClassWithGenerics(CRUDRepository.class, clazz, idClass);
+        if (nonNull(bf.getBeanProvider(crudServiceType).getIfAvailable())) {
+            return;
+        }
+
+        ResolvableType repositoryType = forClassWithGenerics(PagingAndSortingRepository.class, clazz, idClass);
         ResolvableType beforeSaveType = forClassWithGenerics(BeforeSave.class, clazz);
         ResolvableType updateSetterType = forClassWithGenerics(UpdateValuesSetter.class, clazz);
 
@@ -53,13 +59,12 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                     log.debug("required types for crud {} are:\n\trepository {}\n\tbeforeSave: {}\n\tbeforeUpdate: {}",
                             crudServiceType, repositoryType, beforeSaveType, updateSetterType);
 
-                    BeanFactory bf = (BeanFactory) bdr;
 
-                    ObjectProvider<CRUDRepository<WithId<Serializable>, Serializable>> repositoryProvider = bf.getBeanProvider(repositoryType);
+                    ObjectProvider<PagingAndSortingRepository<WithId<Serializable>, Serializable>> repositoryProvider = bf.getBeanProvider(repositoryType);
                     ObjectProvider<BeforeSave<WithId<Serializable>>> beforeSaveProvider = bf.getBeanProvider(beforeSaveType);
                     ObjectProvider<UpdateValuesSetter<WithId<Serializable>>> updateSetterProvider = bf.getBeanProvider(updateSetterType);
 
-                    CRUDRepository<WithId<Serializable>, Serializable> repository = repositoryProvider.getObject();
+                    PagingAndSortingRepository<WithId<Serializable>, Serializable> repository = repositoryProvider.getObject();
                     log.debug("{} of type {} found", repository, repositoryType);
 
                     BeforeSave<WithId<Serializable>> beforeSave = beforeSaveProvider.getIfAvailable(BeforeSave::none);
@@ -80,7 +85,7 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
         );
     }
 
-    private String createCrudServiceBeanName(CRUDEndpointConfig endpoint) {
+    private String createCrudServiceBeanName(CRUDPathProperties endpoint) {
         return endpoint.getPath().replaceAll("\\W", "_") + "_service";
     }
 
