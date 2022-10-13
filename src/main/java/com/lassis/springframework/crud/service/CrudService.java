@@ -28,15 +28,14 @@ public class CrudService<E extends WithId<ID>, ID extends Serializable> {
     }
 
     public E update(ID id, E obj) {
+        if (Objects.isNull(obj.getId()) || !Objects.equals(id, obj.getId())) {
+            throw new UpdateIdConflictException(id, obj.getId());
+        }
+
         E dbObj = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id));
 
         updateSetter.update(dbObj, obj);
-
-        if (Objects.isNull(dbObj.getId()) || !Objects.equals(id, dbObj.getId())) {
-            throw new UpdateIdConflictException(id, dbObj.getId());
-        }
-
         return save(dbObj);
     }
 

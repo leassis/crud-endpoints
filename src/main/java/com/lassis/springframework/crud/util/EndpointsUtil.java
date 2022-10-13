@@ -71,14 +71,11 @@ public class EndpointsUtil {
 
         Set<CRUDPathProperties> endpoints = new HashSet<>();
         for (String propertyPrefix : map.keySet()) {
-            String path = properties.getProperty(propertyPrefix + ".path");
+            String path = properties.getProperty(propertyPrefix + ".path", "");
             String entityClass = properties.getProperty(propertyPrefix + ".entity-class");
-            String dtoClass = properties.getProperty(propertyPrefix + ".dto-class");
+            String dtoClass = properties.getProperty(propertyPrefix + ".dto-class", entityClass);
             String idClass = properties.getProperty(propertyPrefix + ".id-class");
-
-            if (dtoClass == null) {
-                dtoClass = entityClass;
-            }
+            String pageSize = properties.getProperty(propertyPrefix + ".page-size", "999999999");
 
             try {
                 endpoints.add(new CRUDPathProperties(
@@ -86,7 +83,8 @@ public class EndpointsUtil {
                         methods(properties, propertyPrefix),
                         (Class<? extends WithId<? extends Serializable>>) Class.forName(entityClass).asSubclass(WithId.class),
                         Class.forName(idClass).asSubclass(Serializable.class),
-                        Class.forName(dtoClass).asSubclass(Serializable.class)
+                        Class.forName(dtoClass).asSubclass(Serializable.class),
+                        Integer.parseInt(pageSize)
                 ));
             } catch (Exception e) {
                 throw new RuntimeException("cannot load conf for path " + path, e);

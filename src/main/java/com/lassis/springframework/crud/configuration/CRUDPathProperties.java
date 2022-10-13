@@ -14,4 +14,5 @@ public class CRUDPathProperties {
     Class<? extends WithId<? extends Serializable>> entityClass;
     Class<? extends Serializable> idClass;
     Class<? extends Serializable> dtoClass;
+    int pageSize;
 }
