@@ -12,7 +12,7 @@ import java.io.Serializable;
 public interface BeforeSave<T extends WithId<? extends Serializable>> {
 
     /**
-     * execute the the action against the entity. This method could be used to execute common validations
+     * execute the action against the entity. This method could be used to execute common validations
      * against the entity
      *
      * @param obj the entity that implements {@link WithId}

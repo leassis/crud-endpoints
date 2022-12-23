@@ -11,3 +11,14 @@ crud:
         - post
         - put
         - delete
+      sub:
+        - path: '/details'
+          entity-class: com.lassis.springframework.crud.service.ProductDetail
+          dto-class: com.lassis.springframework.crud.service.ProductDetail
+          id-class: java.lang.Long
+          page-size: 25
+          methods:
+            - get
+            - post
+            - put
+            - delete

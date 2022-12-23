@@ -7,8 +7,8 @@ import java.io.Serializable;
 /**
  * event that happens before an update to the entity manager. Used to set the values to an entity
  *
- * @param <T> a entity that implements {@link WithId}
- * @param <O> a dto
+ * @param <T> entity that implements {@link WithId}
+ * @param <T> a dto
  */
 public interface UpdateValuesSetter<T extends WithId<? extends Serializable>> {
 

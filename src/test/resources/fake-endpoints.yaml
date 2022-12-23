@@ -1,0 +1,36 @@
+crud:
+  base-path: '/api'
+  endpoints:
+    - path: '/products'
+      entity-class: com.lassis.springframework.crud.fake.Clz1
+      dto-class: com.lassis.springframework.crud.fake.Clz2
+      id-class: java.lang.Long
+      page-size: 25
+      methods:
+        - get
+        - post
+        - put
+        - delete
+      sub:
+        - path: '/details'
+          entity-class: com.lassis.springframework.crud.fake.Clz3
+          dto-class: com.lassis.springframework.crud.fake.Clz4
+          id-class: java.util.UUID
+          page-size: 10
+          methods:
+            - get
+        - path: '/asub'
+          entity-class: com.lassis.springframework.crud.fake.Clz5
+          dto-class: com.lassis.springframework.crud.fake.Clz5
+          id-class: java.lang.Integer
+          page-size: 5
+          methods:
+            - get
+          sub:
+            - path: '/asub-sub'
+              entity-class: com.lassis.springframework.crud.fake.Clz6
+              dto-class: com.lassis.springframework.crud.fake.Clz6
+              id-class: java.lang.Integer
+              page-size: 5
+              methods:
+                - POST

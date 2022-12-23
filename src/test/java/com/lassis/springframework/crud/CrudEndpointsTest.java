@@ -5,6 +5,8 @@ import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
+import com.lassis.springframework.crud.service.ProductDetail;
+import com.lassis.springframework.crud.service.ProductDetailRepository;
 import com.lassis.springframework.crud.service.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -62,11 +65,15 @@ class CrudEndpointsTest {
     @Autowired
     ProductRepository productRepository;
 
+    @Autowired
+    ProductDetailRepository productDetailRepository;
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
-    void setup(){
+    void setup() {
         productRepository.deleteAll();
+        productDetailRepository.deleteAll();
     }
 
     @Test
@@ -82,6 +89,7 @@ class CrudEndpointsTest {
         mockMvc.perform(post)
                 .andExpect(status().isBadRequest());
     }
+
     @Test
     void shouldDoCreate() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
@@ -108,8 +116,8 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].name", is(p.getName())))
                 .andExpect(jsonPath("$.data[0].id", is(p.getId()), Long.class))
                 .andExpect(jsonPath("$.meta.first", is("F0S25")))
-                .andExpect(jsonPath("$.meta.prev", is("P0S25")))
-                .andExpect(jsonPath("$.meta.next", is("P1S25")))
+                .andExpect(jsonPath("$.meta.prev", nullValue()))
+                .andExpect(jsonPath("$.meta.next", nullValue()))
                 .andExpect(status().isOk());
     }
 
@@ -119,6 +127,7 @@ class CrudEndpointsTest {
         mockMvc.perform(get)
                 .andExpect(status().isNotFound());
     }
+
     @Test
     void shouldDoAGetById() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
@@ -173,7 +182,6 @@ class CrudEndpointsTest {
     }
 
 
-
     @Test
     void shouldDoAGetWithPagination() throws Exception {
         List<Product> toSave = IntStream.range(0, 10)
@@ -196,7 +204,7 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
-                .andExpect(jsonPath("$.meta.prev", is("F0S3")))
+                .andExpect(jsonPath("$.meta.prev", nullValue()))
                 .andExpect(jsonPath("$.meta.next", is("P1S3")))
                 .andExpect(status().isOk());
 
@@ -209,7 +217,7 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
-                .andExpect(jsonPath("$.meta.prev", is("P0S3")))
+                .andExpect(jsonPath("$.meta.prev", is("F0S3")))
                 .andExpect(jsonPath("$.meta.next", is("P2S3")))
                 .andExpect(status().isOk());
 
@@ -235,7 +243,7 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
-                .andExpect(jsonPath("$.meta.prev", is("P0S3")))
+                .andExpect(jsonPath("$.meta.prev", is("F0S3")))
                 .andExpect(jsonPath("$.meta.next", is("P2S3")))
                 .andExpect(status().isOk());
     }
@@ -249,6 +257,71 @@ class CrudEndpointsTest {
         Product p = new Product();
         p.setName(defaultNewProductName);
         return p;
+    }
+
+
+    @Test
+    void shouldDoAMultiLevelGet() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail d = newProductDetail(FAKER.funnyName().name());
+        d = productDetailRepository.save(d);
+
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details")
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(jsonPath("$.data[0].detail", is(d.getDetail())))
+                .andExpect(jsonPath("$.data[0].id", is(d.getId()), Long.class))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldBeNotFoundAMultiLevelGet() throws Exception {
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/9999/details")
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldDoAMultiLevelGetById() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail d = newProductDetail(FAKER.funnyName().name());
+        d = productDetailRepository.save(d);
+
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details/" + d.getId())
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(jsonPath("$.data.detail", is(d.getDetail())))
+                .andExpect(jsonPath("$.data.id", is(d.getId()), Long.class))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldDoAmultiLevelCreate() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail detail = newProductDetail(FAKER.funnyName().name());
+
+        MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/products/" + p.getId() + "/details")
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(detail));
+
+        mockMvc.perform(post)
+                .andExpect(jsonPath("$.data.detail", is(detail.getDetail())))
+                .andExpect(jsonPath("$.data.id", notNullValue()))
+                .andExpect(status().isOk());
+    }
+
+    private static ProductDetail newProductDetail(String detail) {
+        ProductDetail d = new ProductDetail();
+        d.setDetail(detail);
+        return d;
     }
 
 }

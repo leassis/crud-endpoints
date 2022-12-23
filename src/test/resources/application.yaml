@@ -31,15 +31,15 @@ logging:
     org.hibernate.cache: debug
     com.lassis: debug
 
-crud:
-  base-path: '/api'
-  endpoints:
-    - path: '/products'
-      entity-class: com.lassis.springframework.crud.service.Product
-      dto-class: com.lassis.springframework.crud.service.Product
-      id-class: java.lang.Long
-      methods:
-        - get
-        - post
-        - put
-        - delete
+#crud:
+#  base-path: '/api'
+#  endpoints:
+#    - path: '/products'
+#      entity-class: com.lassis.springframework.crud.service.Product
+#      dto-class: com.lassis.springframework.crud.service.Product
+#      id-class: java.lang.Long
+#      methods:
+#        - get
+#        - post
+#        - put
+#        - delete

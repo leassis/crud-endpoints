@@ -44,10 +44,9 @@ public class CrudService<E extends WithId<ID>, ID extends Serializable> {
                 .orElseThrow(() -> new NotFoundException(id));
     }
 
-//    public WithId<ID> getOnlyId(ID id) {
-//        return repository.findSimpleById(id)
-//                .orElseThrow(() -> new NotFoundException(id));
-//    }
+    public boolean exists(ID id) {
+        return repository.existsById(id);
+    }
 
     public Page<E> findAll(Pageable pageable) {
         if (Objects.isNull(pageable)) {

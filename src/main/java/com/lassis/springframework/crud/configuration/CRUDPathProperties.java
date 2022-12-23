@@ -15,4 +15,5 @@ public class CRUDPathProperties {
     Class<? extends Serializable> idClass;
     Class<? extends Serializable> dtoClass;
     int pageSize;
+    Set<CRUDPathProperties> subPaths;
 }

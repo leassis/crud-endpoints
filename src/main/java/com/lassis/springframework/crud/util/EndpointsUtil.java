@@ -7,6 +7,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 
 import java.io.Serializable;
@@ -16,6 +17,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -23,26 +28,27 @@ import java.util.stream.LongStream;
 @Slf4j
 public class EndpointsUtil {
 
+    public static final Pattern SUB_PATTERN = Pattern.compile("\\.sub\\[\\d+\\]");
     private static final String CRUD_PROPERTY_PREFIX = "crud";
-    private static final String CRUD_ENDPOINTS_PROPERTY_PREFIX = CRUD_PROPERTY_PREFIX + ".endpoints";
-
-    private static final int TOKEN_COUNT = 3;
     private static final Set<HttpMethod> HTTP_METHODS = Arrays.stream(HttpMethod.values()).collect(Collectors.toSet());
 
-    public CRUDProperties getConfig() {
-        ClassPathResource resource = new ClassPathResource("endpoints.yaml");
+    public CRUDProperties getConfig(Resource resource) {
         log.debug("loading file: {}", resource);
 
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
         yaml.setResources(resource);
 
         Properties properties = yaml.getObject();
-        log.debug("properties loaded");
+        log.info("{} properties loaded", resource);
 
         return new CRUDProperties(
                 properties.getProperty(CRUD_PROPERTY_PREFIX + ".base-path"),
-                endpoints(properties)
+                endpoints(properties, EndpointsUtil::containsEndpoint, EndpointsUtil::endpointsPrefix)
         );
+    }
+
+    public CRUDProperties getConfig() {
+        return getConfig(new ClassPathResource("endpoints.yaml"));
     }
 
     private static Set<HttpMethod> methods(Properties properties, String rootProperty) {
@@ -63,11 +69,11 @@ public class EndpointsUtil {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<CRUDPathProperties> endpoints(Properties properties) {
+    private static Set<CRUDPathProperties> endpoints(Properties properties, Predicate<String> filtering, Function<String, String> grouping) {
         Map<String, List<String>> map = properties.stringPropertyNames()
                 .stream()
-                .filter(v -> v.contains("endpoints"))
-                .collect(Collectors.groupingBy(EndpointsUtil::endpointsPrefix));
+                .filter(filtering)
+                .collect(Collectors.groupingBy(grouping));
 
         Set<CRUDPathProperties> endpoints = new HashSet<>();
         for (String propertyPrefix : map.keySet()) {
@@ -78,14 +84,19 @@ public class EndpointsUtil {
             String pageSize = properties.getProperty(propertyPrefix + ".page-size", "999999999");
 
             try {
-                endpoints.add(new CRUDPathProperties(
+                Predicate<String> containsSub = v -> v.startsWith(propertyPrefix) && v.indexOf("sub", propertyPrefix.length() + 1) > -1;
+
+                CRUDPathProperties endpoint = new CRUDPathProperties(
                         path,
                         methods(properties, propertyPrefix),
                         (Class<? extends WithId<? extends Serializable>>) Class.forName(entityClass).asSubclass(WithId.class),
                         Class.forName(idClass).asSubclass(Serializable.class),
                         Class.forName(dtoClass).asSubclass(Serializable.class),
-                        Integer.parseInt(pageSize)
-                ));
+                        Integer.parseInt(pageSize),
+                        endpoints(properties, containsSub, v -> subEndpointsPrefix(v, propertyPrefix))
+                );
+
+                endpoints.add(endpoint);
             } catch (Exception e) {
                 throw new RuntimeException("cannot load conf for path " + path, e);
             }
@@ -93,8 +104,18 @@ public class EndpointsUtil {
         return endpoints;
     }
 
+    private static boolean containsEndpoint(String s) {
+        return s.contains("endpoints");
+    }
+
     private static String endpointsPrefix(String s) {
         return s.substring(0, s.indexOf(".", CRUD_PROPERTY_PREFIX.length() + 1));
+    }
+
+    private static String subEndpointsPrefix(String s, String prefix) {
+        Matcher matcher = SUB_PATTERN.matcher(s.substring(prefix.length()));
+        matcher.find();
+        return prefix + matcher.group();
     }
 
 }
