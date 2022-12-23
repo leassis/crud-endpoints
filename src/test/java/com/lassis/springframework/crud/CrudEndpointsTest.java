@@ -5,6 +5,8 @@ import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
+import com.lassis.springframework.crud.service.ProductDetail;
+import com.lassis.springframework.crud.service.ProductDetailRepository;
 import com.lassis.springframework.crud.service.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,11 +65,15 @@ class CrudEndpointsTest {
     @Autowired
     ProductRepository productRepository;
 
+    @Autowired
+    ProductDetailRepository productDetailRepository;
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
-    void setup(){
+    void setup() {
         productRepository.deleteAll();
+        productDetailRepository.deleteAll();
     }
 
     @Test
@@ -83,6 +89,7 @@ class CrudEndpointsTest {
         mockMvc.perform(post)
                 .andExpect(status().isBadRequest());
     }
+
     @Test
     void shouldDoCreate() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
@@ -120,6 +127,7 @@ class CrudEndpointsTest {
         mockMvc.perform(get)
                 .andExpect(status().isNotFound());
     }
+
     @Test
     void shouldDoAGetById() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
@@ -172,7 +180,6 @@ class CrudEndpointsTest {
         mockMvc.perform(put)
                 .andExpect(status().isBadRequest());
     }
-
 
 
     @Test
@@ -250,6 +257,71 @@ class CrudEndpointsTest {
         Product p = new Product();
         p.setName(defaultNewProductName);
         return p;
+    }
+
+
+    @Test
+    void shouldDoAMultiLevelGet() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail d = newProductDetail(FAKER.funnyName().name());
+        d = productDetailRepository.save(d);
+
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details")
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(jsonPath("$.data[0].detail", is(d.getDetail())))
+                .andExpect(jsonPath("$.data[0].id", is(d.getId()), Long.class))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldBeNotFoundAMultiLevelGet() throws Exception {
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/9999/details")
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldDoAMultiLevelGetById() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail d = newProductDetail(FAKER.funnyName().name());
+        d = productDetailRepository.save(d);
+
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details/" + d.getId())
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(jsonPath("$.data.detail", is(d.getDetail())))
+                .andExpect(jsonPath("$.data.id", is(d.getId()), Long.class))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldDoAmultiLevelCreate() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail detail = newProductDetail(FAKER.funnyName().name());
+
+        MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/products/" + p.getId() + "/details")
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(detail));
+
+        mockMvc.perform(post)
+                .andExpect(jsonPath("$.data.detail", is(detail.getDetail())))
+                .andExpect(jsonPath("$.data.id", notNullValue()))
+                .andExpect(status().isOk());
+    }
+
+    private static ProductDetail newProductDetail(String detail) {
+        ProductDetail d = new ProductDetail();
+        d.setDetail(detail);
+        return d;
     }
 
 }

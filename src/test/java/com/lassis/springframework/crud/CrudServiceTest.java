@@ -48,6 +48,7 @@ class CrudServiceTest {
 
     @BeforeEach
     void setup() {
+
         service = new CrudService<>(repository, beforeSave, updateSetter);
     }
 

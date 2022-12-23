@@ -33,9 +33,8 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                 rootBeanDefinition(CRUDProperties.class, () -> config).getBeanDefinition()
         );
 
-        for (CRUDPathProperties endpoint : config.getEndpoints()) {
-            registryCrudServiceIfNotRegistered(bdr, endpoint);
-        }
+
+        config.getEndpoints().forEach(e -> registryCrudServiceIfNotRegistered(bdr, e));
     }
 
 
@@ -83,6 +82,8 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                     return result;
                 }).getBeanDefinition()
         );
+
+        endpoint.getSubPaths().forEach(e -> registryCrudServiceIfNotRegistered(bdr, e));
     }
 
     private String createCrudServiceBeanName(CRUDPathProperties endpoint) {
