@@ -35,6 +35,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -108,8 +109,8 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].name", is(p.getName())))
                 .andExpect(jsonPath("$.data[0].id", is(p.getId()), Long.class))
                 .andExpect(jsonPath("$.meta.first", is("F0S25")))
-                .andExpect(jsonPath("$.meta.prev", is("P0S25")))
-                .andExpect(jsonPath("$.meta.next", is("P1S25")))
+                .andExpect(jsonPath("$.meta.prev", nullValue()))
+                .andExpect(jsonPath("$.meta.next", nullValue()))
                 .andExpect(status().isOk());
     }
 
@@ -196,7 +197,7 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
-                .andExpect(jsonPath("$.meta.prev", is("F0S3")))
+                .andExpect(jsonPath("$.meta.prev", nullValue()))
                 .andExpect(jsonPath("$.meta.next", is("P1S3")))
                 .andExpect(status().isOk());
 
@@ -209,7 +210,7 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
-                .andExpect(jsonPath("$.meta.prev", is("P0S3")))
+                .andExpect(jsonPath("$.meta.prev", is("F0S3")))
                 .andExpect(jsonPath("$.meta.next", is("P2S3")))
                 .andExpect(status().isOk());
 
@@ -235,7 +236,7 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
-                .andExpect(jsonPath("$.meta.prev", is("P0S3")))
+                .andExpect(jsonPath("$.meta.prev", is("F0S3")))
                 .andExpect(jsonPath("$.meta.next", is("P2S3")))
                 .andExpect(status().isOk());
     }

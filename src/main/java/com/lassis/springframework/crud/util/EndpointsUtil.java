@@ -24,9 +24,6 @@ import java.util.stream.LongStream;
 public class EndpointsUtil {
 
     private static final String CRUD_PROPERTY_PREFIX = "crud";
-    private static final String CRUD_ENDPOINTS_PROPERTY_PREFIX = CRUD_PROPERTY_PREFIX + ".endpoints";
-
-    private static final int TOKEN_COUNT = 3;
     private static final Set<HttpMethod> HTTP_METHODS = Arrays.stream(HttpMethod.values()).collect(Collectors.toSet());
 
     public CRUDProperties getConfig() {
