@@ -21,30 +21,44 @@ import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
+import java.util.Stack;
 import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.springframework.core.ResolvableType.forClassWithGenerics;
 import static org.springframework.web.servlet.function.RequestPredicates.path;
 import static org.springframework.web.servlet.function.RouterFunctions.route;
-import static org.springframework.web.servlet.function.ServerResponse.notFound;
-import static org.springframework.web.servlet.function.ServerResponse.ok;
 
 @Slf4j
 class CRUDAPIConfiguration {
-    private final static Pattern PAGE_PATTERN = Pattern.compile("^(P|F)\\d+S\\d$");
+    private static final Pattern PAGE_PATTERN = Pattern.compile("^(P|F)\\d+S\\d$");
+    private static final DtoConverter<Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
 
     @Bean
-    public RouterFunction<ServerResponse> crudRouterFunction(ApplicationContext context, CRUDProperties config) {
+    IdMapper<Long> longIdMapper() {
+        return Long::valueOf;
+    }
+
+    @Bean
+    IdMapper<Integer> integerIdMapper() {
+        return Integer::valueOf;
+    }
+
+    @Bean
+    IdMapper<UUID> uuidIdMapper() {
+        return UUID::fromString;
+    }
+
+    @Bean
+    RouterFunction<ServerResponse> crudRouterFunction(ApplicationContext context, CRUDProperties config) {
         RouterFunctions.Builder route = route();
 
-        Predicate<ServerRequest> rootPredicate = req -> true;
         for (CRUDPathProperties endpoint : config.getEndpoints()) {
             String path = config.getBasePath() + endpoint.getPath();
-            route = createRoute(context, route, endpoint, path, 0, rootPredicate);
+            route = createRoute(context, route, endpoint, path, 0);
         }
 
         return route.build();
@@ -54,8 +68,7 @@ class CRUDAPIConfiguration {
                                                 RouterFunctions.Builder route,
                                                 CRUDPathProperties endpoint,
                                                 String path,
-                                                Integer level,
-                                                Predicate<ServerRequest> validator) {
+                                                Integer level) {
 
         final String pathVarName = "id" + level;
         final String pathVar = "/{" + pathVarName + "}";
@@ -70,115 +83,124 @@ class CRUDAPIConfiguration {
         if (dtoClass != null && entityClass != dtoClass) {
             dtoConverter = resolve(forClassWithGenerics(DtoConverter.class, entityClass, dtoClass), context);
         } else {
-            dtoConverter = bypassDtoConverter();
+            dtoConverter = BYPASS_DTO_CONVERTER;
         }
 
         route = route.nest(path(path), builder -> {
             if (endpoint.getMethods().contains(HttpMethod.GET)) {
-                builder.GET("", req -> ifValid(req, validator, () -> retrieve(req, service, dtoConverter, endpoint)))
-                        .GET(pathVar, req -> ifValid(req, validator, () -> retrieveById(service, idMapper, dtoConverter, req, level)));
+                builder.GET("", req -> retrieve(req, service, dtoConverter, idMapper, endpoint, level))
+                        .GET(pathVar, req -> retrieveById(req, service, dtoConverter, idMapper, level));
             }
 
             if (endpoint.getMethods().contains(HttpMethod.POST)) {
-                builder.POST("", req -> ifValid(req, validator, () -> create(dtoClass, service, dtoConverter, req)));
+                builder.POST("", req -> create(req, service, dtoConverter, dtoClass, idMapper, level));
             }
 
             if (endpoint.getMethods().contains(HttpMethod.PUT)) {
-                builder.PUT(pathVar, req -> ifValid(req, validator, () -> update(dtoClass, service, idMapper, dtoConverter, req, level)));
+                builder.PUT(pathVar, req -> update(req, service, dtoClass, dtoConverter, idMapper, level));
             }
 
             if (endpoint.getMethods().contains(HttpMethod.DELETE)) {
-                builder.DELETE(pathVar, req -> validator.test(req) ? delete(service, idMapper, req, level) : notFound().build());
+                builder.DELETE(pathVar, req -> delete(req, service, idMapper, level));
             }
         });
         log.info("crud endpoint {} was created", path);
 
         for (CRUDPathProperties sub : endpoint.getSubPaths()) {
-            Predicate<ServerRequest> valid = req ->
-                    service.exists(idMapper.apply(req.pathVariable(pathVarName)));
-
             String subPath = path + pathVar + sub.getPath();
 
-            route = createRoute(context, route, sub, subPath, level + 1, valid);
+            route = createRoute(context, route, sub, subPath, level + 1);
         }
 
         return route;
     }
 
-    @Bean
-    public IdMapper<Long> longIdMapper() {
-        return Long::valueOf;
+
+    private ServerResponse create(ServerRequest req,
+                                  CrudService<WithId<Serializable>, Serializable> service,
+                                  DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
+                                  Class<? extends Serializable> dtoClass,
+                                  IdMapper<Serializable> idMapper,
+                                  int level)
+            throws javax.servlet.ServletException, java.io.IOException {
+
+        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+
+        WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
+        Serializable data = dtoConverter.toDto(service.create(idChain, body));
+        return ServerResponse.ok().body(Result.of(data));
     }
 
-    @Bean
-    public IdMapper<Integer> integerIdMapper() {
-        return Integer::valueOf;
-    }
+    private ServerResponse retrieve(ServerRequest req,
+                                    CrudService<WithId<Serializable>, Serializable> service,
+                                    DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
+                                    IdMapper<Serializable> idMapper,
+                                    CRUDPathProperties crudPathProperties,
+                                    int level) {
 
-    @Bean
-    public IdMapper<UUID> uuidIdMapper() {
-        return UUID::fromString;
-    }
-
-    private ServerResponse ifValid(ServerRequest req, Predicate<ServerRequest> validator, ResultSupplier handler) throws Exception {
-        return validator.test(req) ? ok().body(handler.get()) : notFound().build();
-    }
-
-    private Result<Serializable, ?> create(Class<? extends Serializable> dtoClass,
-                                           CrudService<WithId<Serializable>, Serializable> service,
-                                           DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
-                                           ServerRequest req) throws javax.servlet.ServletException, java.io.IOException {
-
-        Serializable data = dtoConverter.toDto(service.create(getBody(dtoConverter, dtoClass, req)));
-        return Result.of(data);
-    }
-
-    private Result<List<Serializable>, Pagination> retrieve(ServerRequest req,
-                                                            CrudService<WithId<Serializable>, Serializable> service,
-                                                            DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
-                                                            CRUDPathProperties crudPathProperties) {
+        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
 
         Pageable pageable = getPageable(req, crudPathProperties.getPageSize());
-        Page<Serializable> pageContent = service.findAll(pageable)
+        Page<Serializable> pageContent = service.all(idChain, pageable)
                 .map(dtoConverter::toDto);
 
-        return Result.of(pageContent.getContent(), toPagination(pageContent));
+        return ServerResponse.ok().body(Result.of(pageContent.getContent(), toPagination(pageContent)));
     }
 
 
-    private Result<Serializable, ?> retrieveById(CrudService<WithId<Serializable>, Serializable> service,
-                                                 IdMapper<Serializable> idMapper,
-                                                 DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
-                                                 ServerRequest req,
-                                                 int level) {
+    private ServerResponse retrieveById(ServerRequest req,
+                                        CrudService<WithId<Serializable>, Serializable> service,
+                                        DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
+                                        IdMapper<Serializable> idMapper,
+                                        int level) {
+
+        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
-        Serializable data = dtoConverter.toDto(service.get(id));
-        return Result.of(data);
+
+        Serializable data = dtoConverter.toDto(service.get(idChain, id));
+        return ServerResponse.ok().body(Result.of(data));
     }
 
-    private Result<Serializable, ?> update(Class<? extends Serializable> dtoClass,
-                                           CrudService<WithId<Serializable>, Serializable> service,
-                                           IdMapper<Serializable> idMapper,
-                                           DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
-                                           ServerRequest req, int level) throws javax.servlet.ServletException, java.io.IOException {
-
-        Serializable id = idMapper.apply(req.pathVariable("id" + level));
-        WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
-        Serializable data = dtoConverter.toDto(service.update(id, body));
-        return Result.of(data);
-    }
-
-    private ServerResponse delete(CrudService<WithId<Serializable>, Serializable> service,
+    private ServerResponse update(ServerRequest req,
+                                  CrudService<WithId<Serializable>, Serializable> service,
+                                  Class<? extends Serializable> dtoClass,
+                                  DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
                                   IdMapper<Serializable> idMapper,
-                                  ServerRequest req,
+                                  int level)
+            throws javax.servlet.ServletException, java.io.IOException {
+
+        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+
+        Serializable id = idMapper.apply(req.pathVariable("id" + level));
+
+        WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
+
+        Serializable data = dtoConverter.toDto(service.update(idChain, id, body));
+        return ServerResponse.ok().body(Result.of(data));
+    }
+
+    private ServerResponse delete(ServerRequest req,
+                                  CrudService<WithId<Serializable>, Serializable> service,
+                                  IdMapper<Serializable> idMapper,
                                   int level) {
 
+        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
-        service.deleteById(id);
+
+        service.deleteById(idChain, id);
         return ServerResponse.noContent().build();
     }
 
+
+    private static Stack<Serializable> toIdChain(IdMapper<Serializable> idMapper, ServerRequest req, int level) {
+        return IntStream.range(0, level).boxed()
+                .map(i -> "id" + i)
+                .map(req::pathVariable)
+                .map(idMapper)
+                .collect(Collectors.toCollection(Stack::new));
+    }
 
     private Pagination toPagination(Page<Serializable> pageContent) {
         Pageable pageable = pageContent.getPageable();
@@ -243,9 +265,5 @@ class CRUDAPIConfiguration {
         };
     }
 
-    private interface ResultSupplier {
-
-        Result<?, ?> get() throws Exception;
-    }
 }
 

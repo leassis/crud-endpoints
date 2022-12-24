@@ -8,6 +8,7 @@ import lombok.ToString;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Getter
@@ -20,4 +21,6 @@ public class ProductDetail implements WithId<Long> {
     @GeneratedValue
     private Long id;
     private String detail;
+    @ManyToOne(optional = false)
+    private Product product;
 }

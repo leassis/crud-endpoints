@@ -41,9 +41,16 @@ public class EndpointsUtil {
         Properties properties = yaml.getObject();
         log.info("{} properties loaded", resource);
 
+        Set<CRUDPathProperties> endpoints = endpoints(
+                properties,
+                properties.getProperty(CRUD_PROPERTY_PREFIX + ".id-class"),
+                EndpointsUtil::containsEndpoint,
+                EndpointsUtil::endpointsPrefix
+        );
+
         return new CRUDProperties(
                 properties.getProperty(CRUD_PROPERTY_PREFIX + ".base-path"),
-                endpoints(properties, EndpointsUtil::containsEndpoint, EndpointsUtil::endpointsPrefix)
+                endpoints
         );
     }
 
@@ -69,7 +76,11 @@ public class EndpointsUtil {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<CRUDPathProperties> endpoints(Properties properties, Predicate<String> filtering, Function<String, String> grouping) {
+    private static Set<CRUDPathProperties> endpoints(Properties properties,
+                                                     String idClass,
+                                                     Predicate<String> filtering,
+                                                     Function<String, String> grouping) {
+
         Map<String, List<String>> map = properties.stringPropertyNames()
                 .stream()
                 .filter(filtering)
@@ -80,7 +91,6 @@ public class EndpointsUtil {
             String path = properties.getProperty(propertyPrefix + ".path", "");
             String entityClass = properties.getProperty(propertyPrefix + ".entity-class");
             String dtoClass = properties.getProperty(propertyPrefix + ".dto-class", entityClass);
-            String idClass = properties.getProperty(propertyPrefix + ".id-class");
             String pageSize = properties.getProperty(propertyPrefix + ".page-size", "999999999");
 
             try {
@@ -93,7 +103,7 @@ public class EndpointsUtil {
                         Class.forName(idClass).asSubclass(Serializable.class),
                         Class.forName(dtoClass).asSubclass(Serializable.class),
                         Integer.parseInt(pageSize),
-                        endpoints(properties, containsSub, v -> subEndpointsPrefix(v, propertyPrefix))
+                        endpoints(properties, idClass, containsSub, v -> subEndpointsPrefix(v, propertyPrefix))
                 );
 
                 endpoints.add(endpoint);
