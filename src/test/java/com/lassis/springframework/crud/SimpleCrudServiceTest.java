@@ -5,6 +5,7 @@ import com.lassis.springframework.crud.exception.NotFoundException;
 import com.lassis.springframework.crud.service.BeforeSave;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
+import com.lassis.springframework.crud.service.SimpleCrudService;
 import com.lassis.springframework.crud.service.UpdateValuesSetter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.Optional;
+import java.util.Stack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -30,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class CrudServiceTest {
+class SimpleCrudServiceTest {
 
     static final Faker FAKER = Faker.instance();
 
@@ -48,8 +50,7 @@ class CrudServiceTest {
 
     @BeforeEach
     void setup() {
-
-        service = new CrudService<>(repository, beforeSave, updateSetter);
+        service = new SimpleCrudService<>(repository, beforeSave, updateSetter);
     }
 
     @Test
@@ -61,7 +62,7 @@ class CrudServiceTest {
         p.setName(FAKER.funnyName().name());
 
         when(repository.findById(eq(id))).thenReturn(Optional.of(p));
-        p = service.get(id);
+        p = service.get(new Stack<>(), id);
         assertThat(p).isNotNull();
     }
 
@@ -70,7 +71,7 @@ class CrudServiceTest {
         long id = FAKER.number().numberBetween(10, 20);
 
         when(repository.findById(eq(id))).thenReturn(Optional.empty());
-        NotFoundException ex = catchThrowableOfType(() -> service.get(id),
+        NotFoundException ex = catchThrowableOfType(() -> service.get(new Stack<>(), id),
                 NotFoundException.class);
         assertThat(ex.getMessage()).contains(id + " not found");
     }
@@ -95,7 +96,7 @@ class CrudServiceTest {
         });
         when(repository.findById(any())).thenReturn(Optional.of(p));
 
-        service.create(p);
+        service.create(new Stack<>(), p);
 
         verify(beforeSave).execute(any());
         verify(repository).save(any());
@@ -111,7 +112,7 @@ class CrudServiceTest {
 
         when(repository.findById(eq(id))).thenReturn(Optional.of(p));
         when(repository.save(eq(p))).thenReturn(p);
-        service.update(id, p);
+        service.update(new Stack<>(), id, p);
 
         verify(updateSetter).update(eq(p), eq(p));
         verify(beforeSave).execute(eq(p));
@@ -127,7 +128,7 @@ class CrudServiceTest {
         Product p = new Product();
         p.setId(id);
 
-        NotFoundException ex = catchThrowableOfType(() -> service.update(id, p),
+        NotFoundException ex = catchThrowableOfType(() -> service.update(new Stack<>(), id, p),
                 NotFoundException.class);
 
         assertThat(ex.getMessage()).contains(id + " not found");
@@ -140,7 +141,7 @@ class CrudServiceTest {
 
         when(repository.existsById(eq(id))).thenReturn(true);
 
-        service.deleteById(id);
+        service.deleteById(new Stack<>(), id);
 
         verify(repository).deleteById(eq(id));
     }
@@ -150,7 +151,7 @@ class CrudServiceTest {
         long id = FAKER.number().numberBetween(10, 20);
         when(repository.existsById(eq(id))).thenReturn(false);
 
-        NotFoundException ex = catchThrowableOfType(() -> service.deleteById(id),
+        NotFoundException ex = catchThrowableOfType(() -> service.deleteById(new Stack<>(), id),
                 NotFoundException.class);
 
         assertThat(ex.getMessage()).contains(id + " not found");
@@ -158,7 +159,7 @@ class CrudServiceTest {
 
     @Test
     void shouldGetAllProducts() {
-        service.findAll(null);
+        service.all(new Stack<>(), null);
         verify(repository).findAll(any(Pageable.class));
     }
 }

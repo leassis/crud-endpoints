@@ -3,11 +3,11 @@ package com.lassis.springframework.crud;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
+import com.lassis.springframework.crud.repository.ProductDetailRepository;
+import com.lassis.springframework.crud.repository.ProductRepository;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
-import com.lassis.springframework.crud.service.ProductDetailRepository;
-import com.lassis.springframework.crud.service.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,8 +17,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureDataJpa;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -33,6 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
@@ -72,8 +71,8 @@ class CrudEndpointsTest {
 
     @BeforeEach
     void setup() {
-        productRepository.deleteAll();
         productDetailRepository.deleteAll();
+        productRepository.deleteAll();
     }
 
     @Test
@@ -187,12 +186,11 @@ class CrudEndpointsTest {
         List<Product> toSave = IntStream.range(0, 10)
                 .mapToObj(i -> newProduct(FAKER.funnyName().name()))
                 .collect(Collectors.toList());
-        productRepository.saveAll(toSave);
 
-        List<Product> products = crudService.findAll(PageRequest.of(0, Integer.MAX_VALUE, Sort.by("id")))
-                .stream()
+        List<Product> products = StreamSupport.stream(productRepository.saveAll(toSave).spliterator(), false)
                 .sorted(Comparator.comparing(Product::getId))
                 .collect(Collectors.toList());
+
 
         final int pageSize = 3;
         // page 0
@@ -265,7 +263,7 @@ class CrudEndpointsTest {
         Product p = newProduct(FAKER.funnyName().name());
         p = productRepository.save(p);
 
-        ProductDetail d = newProductDetail(FAKER.funnyName().name());
+        ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
         d = productDetailRepository.save(d);
 
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details")
@@ -289,7 +287,7 @@ class CrudEndpointsTest {
         Product p = newProduct(FAKER.funnyName().name());
         p = productRepository.save(p);
 
-        ProductDetail d = newProductDetail(FAKER.funnyName().name());
+        ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
         d = productDetailRepository.save(d);
 
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details/" + d.getId())
@@ -305,7 +303,7 @@ class CrudEndpointsTest {
         Product p = newProduct(FAKER.funnyName().name());
         p = productRepository.save(p);
 
-        ProductDetail detail = newProductDetail(FAKER.funnyName().name());
+        ProductDetail detail = newProductDetail(FAKER.funnyName().name(), p);
 
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/products/" + p.getId() + "/details")
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -318,9 +316,10 @@ class CrudEndpointsTest {
                 .andExpect(status().isOk());
     }
 
-    private static ProductDetail newProductDetail(String detail) {
+    private static ProductDetail newProductDetail(String detail, Product product) {
         ProductDetail d = new ProductDetail();
         d.setDetail(detail);
+        d.setProduct(product);
         return d;
     }
 
