@@ -18,6 +18,14 @@
                     </plugin>
                 </plugins>
             </build>
+
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub leassis Apache Maven Packages</name>
+                    <url>https://maven.pkg.github.com/leassis/crud-endpoints</url>
+                </repository>
+            </distributionManagement>
         </profile>
     </profiles>
 
@@ -32,4 +40,5 @@
             <password>${env.GITHUB_TOKEN}</password>
         </server>
     </servers>
+
 </settings>
