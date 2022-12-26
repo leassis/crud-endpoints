@@ -35,6 +35,7 @@ jobs:
           java-version: 8
           cache: 'maven'
           check-latest: false
+          ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
 
       - name: Configure Git User
         run: |
