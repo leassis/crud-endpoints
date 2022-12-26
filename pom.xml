@@ -9,7 +9,7 @@
     </parent>
     <groupId>com.lassis</groupId>
     <artifactId>crud-endpoints</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3-SNAPSHOT</version>
     <name>crud-endpoints</name>
     <description>Crud Endpoints</description>
 
@@ -22,7 +22,7 @@
         <connection>scm:git:${scm_ssh}</connection>
         <url>scm:git:${scm_ssh}</url>
         <developerConnection>scm:git:${scm_ssh}</developerConnection>
-      <tag>crud-endpoints-0.0.2</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <distributionManagement>
