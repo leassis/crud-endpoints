@@ -13,9 +13,17 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>crud-endpoints</name>
     <description>Crud Endpoints</description>
+
     <properties>
         <java.version>8</java.version>
+        <scm_ssh>git@github.com:leassis/crud-endpoints.git</scm_ssh>
     </properties>
+
+    <scm>
+        <connection>scm:git:${scm_ssh}</connection>
+        <url>scm:git:${scm_ssh}</url>
+        <developerConnection>scm:git:${scm_ssh}</developerConnection>
+    </scm>
 
     <distributionManagement>
         <repository>
