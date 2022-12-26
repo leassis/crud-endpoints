@@ -15,23 +15,16 @@
 
     <properties>
         <java.version>8</java.version>
-        <scm_ssh>git@github.com:leassis/crud-endpoints.git</scm_ssh>
+        <scm.url>git@github.com:leassis/crud-endpoints.git</scm.url>
+        <project.scm.id>github</project.scm.id>
     </properties>
 
     <scm>
-        <connection>scm:git:${scm_ssh}</connection>
-        <url>scm:git:${scm_ssh}</url>
-        <developerConnection>scm:git:${scm_ssh}</developerConnection>
-      <tag>HEAD</tag>
-  </scm>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub leassis Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/leassis/crud-endpoints</url>
-        </repository>
-    </distributionManagement>
+        <connection>scm:git:${scm.url}</connection>
+        <url>scm:git:${scm.url}</url>
+        <developerConnection>scm:git:${scm.url}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
     <dependencies>
         <dependency>

@@ -9,11 +9,11 @@
 # the `language` matrix defined below to confirm you have the correct set of
 # supported CodeQL languages.
 #
-name: "CodeQL"
+name: "On-Pull-Request"
 
 on:
-  push:
-    branches: [ "main" ]
+  #  push:
+  #    branches: [ "main" ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
@@ -21,7 +21,16 @@ on:
 #    - cron: '18 16 * * 2'
 
 jobs:
+  Describe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 Author ${{ github.actor }}"
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
   analyze:
+    needs: Describe
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
@@ -66,11 +75,30 @@ jobs:
     #   If the Autobuild fails above, remove it and uncomment the following three lines.
     #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
 
-    # - run: |
-    #   echo "Run, Build Application using script"
-    #   ./location_of_script_within_repo/buildscript.sh
+      # - run: |
+      #   echo "Run, Build Application using script"
+      #   ./location_of_script_within_repo/buildscript.sh
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:${{matrix.language}}"
+
+  MavenVerify:
+    needs: Describe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 8
+          cache: 'maven'
+          check-latest: false
+
+      - name: Run maven verify
+        run: ${{ github.workspace }}/mvnw clean verify
+      - run: echo "🍏 This job's status is ${{ job.status }}."
