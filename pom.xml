@@ -15,15 +15,15 @@
 
     <properties>
         <java.version>8</java.version>
-        <scm_ssh>git@github.com:leassis/crud-endpoints.git</scm_ssh>
+        <scm.id>git@github.com:leassis/crud-endpoints.git</scm.id>
     </properties>
 
     <scm>
-        <connection>scm:git:${scm_ssh}</connection>
-        <url>scm:git:${scm_ssh}</url>
-        <developerConnection>scm:git:${scm_ssh}</developerConnection>
-      <tag>HEAD</tag>
-  </scm>
+        <connection>scm:git:${scm.id}</connection>
+        <url>scm:git:${scm.id}</url>
+        <developerConnection>scm:git:${scm.id}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
     <distributionManagement>
         <repository>
