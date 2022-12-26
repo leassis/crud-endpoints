@@ -1,5 +1,5 @@
 name: Maven verify
-run-name: ${{ github.actor }} on GitHub Actions 🚀
+run-name: ${{ github.actor }} ran maven verify on GitHub Actions 🚀
 on: [ push ]
 jobs:
   MavenVerify:
