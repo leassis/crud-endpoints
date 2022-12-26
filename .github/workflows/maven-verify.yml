@@ -15,6 +15,8 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 8
+          cache: 'maven'
+          check-latest: false
       #      - name: Run maven version
       #        run: ${{ github.workspace }}/mvnw --version
       - name: Run maven verify
