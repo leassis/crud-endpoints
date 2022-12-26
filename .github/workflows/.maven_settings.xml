@@ -14,6 +14,7 @@
                             <tagNameFormat>v@{project.version}</tagNameFormat>
                             <autoVersionSubmodules>true</autoVersionSubmodules>
                             <releaseProfiles>releases</releaseProfiles>
+                            <scmCommentPrefix>[ci skip]</scmCommentPrefix>
                         </configuration>
                     </plugin>
                 </plugins>
