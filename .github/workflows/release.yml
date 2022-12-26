@@ -43,7 +43,7 @@ jobs:
         with:
           git-release-bot-name: "Github Actions"
           git-release-bot-email: "actions@github.com"
-
+          release-branch-name: main
           maven-args: "-Dmaven.javadoc.skip=true -DskipTests Dmaven.deploy.skip=true"
           ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
         env:
