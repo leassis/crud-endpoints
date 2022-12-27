@@ -8,6 +8,7 @@ import com.lassis.springframework.crud.repository.ProductRepository;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
+import com.lassis.springframework.crud.service.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -321,6 +322,23 @@ class CrudEndpointsTest {
         d.setDetail(detail);
         d.setProduct(product);
         return d;
+    }
+
+    @Test
+    void shouldDoCreateAUserAndReturnDto() throws Exception {
+        User u = new User();
+        u.setName(FAKER.funnyName().name());
+
+
+        MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/users")
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(u));
+
+        mockMvc.perform(post)
+                .andExpect(jsonPath("$.data.name").value(u.getName()))
+                .andExpect(jsonPath("$.data.id").doesNotExist())
+                .andExpect(status().isOk());
     }
 
 }

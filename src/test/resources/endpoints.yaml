@@ -21,3 +21,9 @@ crud:
             - post
             - put
             - delete
+    - path: '/users'
+      entity-class: com.lassis.springframework.crud.service.User
+      dto-class: com.lassis.springframework.crud.dto.UserDto
+      page-size: 25
+      methods:
+        - post

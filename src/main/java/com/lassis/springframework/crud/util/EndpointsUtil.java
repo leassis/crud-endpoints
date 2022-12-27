@@ -9,6 +9,7 @@ import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
+import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -32,7 +33,8 @@ public class EndpointsUtil {
     private static final String CRUD_PROPERTY_PREFIX = "crud";
     private static final Set<HttpMethod> HTTP_METHODS = Arrays.stream(HttpMethod.values()).collect(Collectors.toSet());
 
-    public CRUDProperties getConfig(Resource resource) {
+    @NonNull
+    public CRUDProperties getConfig(@NonNull Resource resource) {
         log.debug("loading file: {}", resource);
 
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();

@@ -164,7 +164,7 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldGetAllProducts() {
-        service.all(new Stack<>(), null);
+        service.all(new Stack<>(), Pageable.unpaged());
         verify(repository).findAll(any(Pageable.class));
     }
 }

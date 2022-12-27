@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Stack;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -79,12 +80,7 @@ class CRUDAPIConfiguration {
 
         final CrudService<WithId<Serializable>, Serializable> service = resolve(forClassWithGenerics(CrudService.class, entityClass, idClass), context);
         final IdMapper<Serializable> idMapper = resolve(forClassWithGenerics(IdMapper.class, idClass), context);
-        final DtoConverter<Serializable, WithId<Serializable>> dtoConverter;
-        if (dtoClass != null && entityClass != dtoClass) {
-            dtoConverter = resolve(forClassWithGenerics(DtoConverter.class, entityClass, dtoClass), context);
-        } else {
-            dtoConverter = BYPASS_DTO_CONVERTER;
-        }
+        final DtoConverter<Serializable, WithId<Serializable>> dtoConverter = resolve(forClassWithGenerics(DtoConverter.class, dtoClass, entityClass), context, () -> BYPASS_DTO_CONVERTER);
 
         route = route.nest(path(path), builder -> {
             if (endpoint.getMethods().contains(HttpMethod.GET)) {
@@ -249,6 +245,11 @@ class CRUDAPIConfiguration {
     private <R> R resolve(ResolvableType type, ApplicationContext context) {
         ObjectProvider<R> beanProvider = context.getBeanProvider(type);
         return beanProvider.getObject();
+    }
+
+    private <R> R resolve(ResolvableType type, ApplicationContext context, Supplier<R> defaultBean) {
+        ObjectProvider<R> beanProvider = context.getBeanProvider(type);
+        return beanProvider.getIfAvailable(defaultBean);
     }
 
     private static DtoConverter<Serializable, WithId<Serializable>> bypassDtoConverter() {

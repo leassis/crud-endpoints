@@ -65,10 +65,6 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
 
     @Override
     public Page<E> all(Stack<ID> chain, Pageable pageable) {
-        if (Objects.isNull(pageable)) {
-            pageable = Pageable.unpaged();
-        }
-
         if (!chainChecker.exists(chain)) {
             throw new NotFoundException();
         }
