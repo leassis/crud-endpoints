@@ -46,7 +46,7 @@ jobs:
           release-branch-name: ${{ github.event.inputs.branch }}
           maven-args: "-Dmaven.javadoc.skip=true -DskipTests Dmaven.deploy.skip=true"
           ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
-          maven-servers: [maven-servers: [{"id": "github", "username": "${env.GITHUB_ACTOR}", "password": "${env.GITHUB_TOKEN}"}]]
+          maven-servers: [{"id": "github", "username": "${env.GITHUB_ACTOR}", "password": "${env.GITHUB_TOKEN}"}]
         env:
           #          CI_DEPLOY_USERNAME: ${{ secrets.CI_DEPLOY_USERNAME }}
           #          CI_DEPLOY_PASSWORD: ${{ secrets.CI_DEPLOY_PASSWORD }}
