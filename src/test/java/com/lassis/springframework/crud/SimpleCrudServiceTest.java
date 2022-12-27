@@ -3,8 +3,6 @@ package com.lassis.springframework.crud;
 import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.exception.NotFoundException;
 import com.lassis.springframework.crud.service.BeforeSave;
-import com.lassis.springframework.crud.service.ChainChecker;
-import com.lassis.springframework.crud.service.ChainCheckerNoOp;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.SimpleCrudService;
@@ -17,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
-import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -32,7 +29,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.core.ResolvableType.forClassWithGenerics;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -54,8 +50,7 @@ class SimpleCrudServiceTest {
 
     @BeforeEach
     void setup() {
-        final ResolvableType chainCheckerType = forClassWithGenerics(ChainChecker.class, Product.class, Long.class);
-        service = new SimpleCrudService<>(repository, beforeSave, updateSetter, new ChainCheckerNoOp<>(chainCheckerType));
+        service = new SimpleCrudService<>(repository, beforeSave, updateSetter);
     }
 
     @Test

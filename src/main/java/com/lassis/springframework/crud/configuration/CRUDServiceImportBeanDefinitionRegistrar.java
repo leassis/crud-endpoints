@@ -2,8 +2,6 @@ package com.lassis.springframework.crud.configuration;
 
 import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.service.BeforeSave;
-import com.lassis.springframework.crud.service.ChainChecker;
-import com.lassis.springframework.crud.service.ChainCheckerNoOp;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.SimpleCrudService;
 import com.lassis.springframework.crud.service.UpdateValuesSetter;
@@ -37,11 +35,11 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                 rootBeanDefinition(CRUDProperties.class, () -> config).getBeanDefinition()
         );
 
-        config.getEndpoints().forEach(e -> registryCrudServiceIfNotRegistered(bdr, e, ""));
+        config.getEndpoints().forEach(e -> registryCrudService(bdr, e, ""));
     }
 
 
-    private void registryCrudServiceIfNotRegistered(BeanDefinitionRegistry bdr, CRUDPathProperties endpoint, String prefixName) {
+    private void registryCrudService(BeanDefinitionRegistry bdr, CRUDPathProperties endpoint, String prefixName) {
         final BeanFactory bf = (BeanFactory) bdr;
         final Class<? extends WithId<? extends Serializable>> clazz = endpoint.getEntityClass();
         final Class<? extends Serializable> idClass = endpoint.getIdClass();
@@ -51,7 +49,6 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
         final ResolvableType repositoryType = forClassWithGenerics(PagingAndSortingRepository.class, clazz, idClass);
         final ResolvableType beforeSaveType = forClassWithGenerics(BeforeSave.class, clazz);
         final ResolvableType updateSetterType = forClassWithGenerics(UpdateValuesSetter.class, clazz);
-        final ResolvableType chainCheckerType = forClassWithGenerics(ChainChecker.class, clazz, idClass);
 
         final String beanName = createCrudServiceBeanName(endpoint, prefixName);
         bdr.registerBeanDefinition(beanName,
@@ -62,7 +59,6 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                     ObjectProvider<PagingAndSortingRepository<WithId<Serializable>, Serializable>> repositoryProvider = bf.getBeanProvider(repositoryType);
                     ObjectProvider<BeforeSave<WithId<Serializable>>> beforeSaveProvider = bf.getBeanProvider(beforeSaveType);
                     ObjectProvider<UpdateValuesSetter<WithId<Serializable>>> updateSetterProvider = bf.getBeanProvider(updateSetterType);
-                    ObjectProvider<ChainChecker<WithId<Serializable>, Serializable>> chainCheckerProvider = bf.getBeanProvider(chainCheckerType);
 
                     PagingAndSortingRepository<WithId<Serializable>, Serializable> repository = repositoryProvider.getObject();
                     log.debug("{} of type {} found", repository, repositoryType);
@@ -73,14 +69,10 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                     UpdateValuesSetter<WithId<Serializable>> updateSetter = updateSetterProvider.getObject();
                     log.debug("{} of type {} found", updateSetter, updateSetterType);
 
-                    ChainChecker<WithId<Serializable>, Serializable> chainChecker = chainCheckerProvider.getIfAvailable(() -> new ChainCheckerNoOp<>(chainCheckerType));
-                    log.debug("{} of type {} found", chainChecker, chainCheckerType);
-
                     CrudService<WithId<Serializable>, Serializable> result = new SimpleCrudService<>(
                             repository,
                             beforeSave,
-                            updateSetter,
-                            chainChecker
+                            updateSetter
                     );
                     log.info("bean {} of type {} has been created and it is now available in the context", beanName, crudServiceType);
 
@@ -88,7 +80,7 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                 }).getBeanDefinition()
         );
 
-        endpoint.getSubPaths().forEach(sub -> registryCrudServiceIfNotRegistered(bdr, sub, prefixName + endpoint.getPath()));
+        endpoint.getSubPaths().forEach(sub -> registryCrudService(bdr, sub, prefixName + endpoint.getPath()));
     }
 
     private String createCrudServiceBeanName(CRUDPathProperties endpoint, String prefixName) {
