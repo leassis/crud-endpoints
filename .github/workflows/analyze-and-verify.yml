@@ -12,10 +12,11 @@
 name: "On-Pull-Request"
 
 on:
-  #  push:
-  #    branches: [ "main" ]
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
   pull_request:
-    # The branches below must be a subset of the branches above
+#     The branches below must be a subset of the branches above
     branches: [ "main" ]
 #  schedule:
 #    - cron: '18 16 * * 2'

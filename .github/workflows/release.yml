@@ -29,23 +29,28 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: 8
-          cache: 'maven'
-          check-latest: false
-          ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
-
-      - name: Configure Git User
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
+      #      - uses: actions/setup-java@v3
+      #        with:
+      #          distribution: 'temurin'
+      #          java-version: 8
+      #          cache: 'maven'
+      #          check-latest: false
+      #          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+      #          settings-path: ${{ github.workspace }} # location for the settings.xml file
 
       - name: Release
-        run: mvn release:prepare release:perform -B -s ${{ github.workspace }}/.github/workflows/.maven_settings.xml -DreleaseVersion=${{ github.event.inputs.releaseVersion }} -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
+        uses: qcastel/github-actions-maven-release@v1.12.39
+        with:
+          git-release-bot-name: "Github Actions"
+          git-release-bot-email: "actions@github.com"
+          release-branch-name: ${{ github.event.inputs.branch }}
+          maven-args: "-Dmaven.javadoc.skip=true -DskipTests Dmaven.deploy.skip=true"
+          ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
+          maven-servers: '[{"id": "github-packages", "username": "${env.GITHUB_ACTOR}", "password": "${env.GITHUB_TOKEN}"}]'
         env:
           #          CI_DEPLOY_USERNAME: ${{ secrets.CI_DEPLOY_USERNAME }}
           #          CI_DEPLOY_PASSWORD: ${{ secrets.CI_DEPLOY_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ github.token }}
+          JAVA_HOME: /usr/lib/jvm/java-1.8-openjdk/
+
