@@ -44,7 +44,12 @@ jobs:
           git-release-bot-name: "Github Actions"
           git-release-bot-email: "actions@github.com"
           release-branch-name: ${{ github.event.inputs.branch }}
-          maven-args: "-Dmaven.javadoc.skip=true -DskipTests"
+          maven-args: "-Dmaven.javadoc.skip=true -DskipTests Dmaven.deploy.skip=true"
           ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
-          maven-servers: [{"id": "github", "username": ${{ github.actor }}, "password": ""}]
+          maven-servers: [maven-servers: [{"id": "github", "username": "${env.GITHUB_ACTOR}", "password": "${env.GITHUB_TOKEN}"}]]
+        env:
+          #          CI_DEPLOY_USERNAME: ${{ secrets.CI_DEPLOY_USERNAME }}
+          #          CI_DEPLOY_PASSWORD: ${{ secrets.CI_DEPLOY_PASSWORD }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
 
