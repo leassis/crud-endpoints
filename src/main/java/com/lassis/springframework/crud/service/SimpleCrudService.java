@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Objects;
 import java.util.Stack;
 
@@ -22,6 +21,7 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     private final PagingAndSortingRepository<E, ID> repository;
     private final BeforeSave<E> beforeSaveAction;
     private final UpdateValuesSetter<E> updateSetter;
+    private final ChainChecker<E, ID> chainChecker;
 
     @Override
     public E create(Stack<ID> chain, E obj) {
@@ -29,8 +29,11 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
             throw new CreateNonEmptyIdException();
         }
 
-        logIfMultiLevel(chain);
-        return save(chain, obj);
+        if (!chainChecker.exists(chain)) {
+            throw new NotFoundException();
+        }
+
+        return save(obj);
     }
 
     @Override
@@ -39,18 +42,22 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
             throw new UpdateIdConflictException(id, obj.getId());
         }
 
-        logIfMultiLevel(chain);
+        if (!chainChecker.exists(chain, id)) {
+            throw new NotFoundException();
+        }
 
         E dbObj = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id));
 
         updateSetter.update(dbObj, obj);
-        return save(chain, dbObj);
+        return save(dbObj);
     }
 
     @Override
     public E get(Stack<ID> chain, ID id) {
-        logIfMultiLevel(chain);
+        if (!chainChecker.exists(chain, id)) {
+            throw new NotFoundException();
+        }
 
         return repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id));
@@ -62,7 +69,10 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
             pageable = Pageable.unpaged();
         }
 
-        logIfMultiLevel(chain);
+        if (!chainChecker.exists(chain)) {
+            throw new NotFoundException();
+        }
+
         return repository.findAll(pageable);
     }
 
@@ -71,20 +81,20 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
         if (!repository.existsById(id)) {
             throw new NotFoundException(id);
         }
-        logIfMultiLevel(chain);
+
+        if (!chainChecker.exists(chain, id)) {
+            throw new NotFoundException();
+        }
+
         repository.deleteById(id);
     }
 
-    private E save(Stack<ID> chain, E entity) {
+    private E save(E entity) {
         beforeSaveAction.execute(entity);
         E save = repository.save(entity);
-        return get(chain, save.getId());
-    }
 
-    private void logIfMultiLevel(Collection<ID> chain) {
-        if (!chain.isEmpty()) {
-            log.warn("you're using a multi level mapping {} is not doing all verifications", this.getClass());
-        }
+        return repository.findById(save.getId())
+                .orElseThrow(() -> new NotFoundException(save.getId()));
     }
 
 }
