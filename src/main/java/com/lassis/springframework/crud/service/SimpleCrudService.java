@@ -18,7 +18,6 @@ import java.util.Stack;
 @RequiredArgsConstructor
 @Slf4j
 public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> implements CrudService<E, ID> {
-
     private final PagingAndSortingRepository<E, ID> repository;
     private final BeforeSave<E> beforeSaveAction;
     private final UpdateValuesSetter<E> updateSetter;
