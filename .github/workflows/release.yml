@@ -46,5 +46,5 @@ jobs:
           release-branch-name: ${{ github.event.inputs.branch }}
           maven-args: "-Dmaven.javadoc.skip=true -DskipTests"
           ssh-private-key: ${{ secrets.ACTIONS_PRIVATE_KEY }}
-          maven-servers: [{"id": "github", "username": ${{ github.actor }}, "password": ${{ github.token }}}]
+
 
