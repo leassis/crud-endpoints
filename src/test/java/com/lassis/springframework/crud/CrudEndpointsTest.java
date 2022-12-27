@@ -267,9 +267,16 @@ class CrudEndpointsTest {
         ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
         d = productDetailRepository.save(d);
 
+        Product p1 = newProduct(FAKER.funnyName().name());
+        productRepository.save(p1);
+
+        ProductDetail d1 = newProductDetail(FAKER.funnyName().name(), p1);
+        productDetailRepository.save(d1);
+
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details")
                 .accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
+                .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].detail", is(d.getDetail())))
                 .andExpect(jsonPath("$.data[0].id", is(d.getId()), Long.class))
                 .andExpect(status().isOk());
