@@ -35,7 +35,7 @@ import static org.springframework.web.servlet.function.RouterFunctions.route;
 
 @Slf4j
 class CRUDAPIConfiguration {
-    private static final Pattern PAGE_PATTERN = Pattern.compile("^(P|F)\\d+S\\d$");
+    private static final Pattern PAGE_PATTERN = Pattern.compile("^(P|F)\\d+S\\d+$");
     private static final DtoConverter<Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
 
     @Bean
