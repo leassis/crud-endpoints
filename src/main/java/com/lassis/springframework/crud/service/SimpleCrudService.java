@@ -44,7 +44,7 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
         E dbObj = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id));
 
-        updateSetter.update(obj, dbObj);
+        updateSetter.update(dbObj, obj);
         return save(dbObj);
     }
 

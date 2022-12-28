@@ -73,7 +73,7 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                         BeforeSave<WithId<Serializable>> beforeSave = beforeSaveProvider.getIfAvailable(BeforeSave::none);
                         log.debug("{} of type {} found", beforeSave, beforeSaveType);
 
-                        UpdateValuesSetter<WithId<Serializable>> updateSetter = updateSetterProvider.getIfAvailable(() -> (UpdateValuesSetter<WithId<Serializable>>) new GenericUpdateValuesSetter<>(clazz));
+                        UpdateValuesSetter<WithId<Serializable>> updateSetter = updateSetterProvider.getIfAvailable(GenericUpdateValuesSetter::new);
                         log.debug("{} of type {} found", updateSetter, updateSetterType);
 
                         CrudService<WithId<Serializable>, Serializable> rootService = new SimpleCrudService<>(

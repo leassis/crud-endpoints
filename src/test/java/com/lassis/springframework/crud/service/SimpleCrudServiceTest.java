@@ -1,12 +1,7 @@
-package com.lassis.springframework.crud;
+package com.lassis.springframework.crud.service;
 
 import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.exception.NotFoundException;
-import com.lassis.springframework.crud.service.BeforeSave;
-import com.lassis.springframework.crud.service.CrudService;
-import com.lassis.springframework.crud.service.Product;
-import com.lassis.springframework.crud.service.SimpleCrudService;
-import com.lassis.springframework.crud.service.UpdateValuesSetter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

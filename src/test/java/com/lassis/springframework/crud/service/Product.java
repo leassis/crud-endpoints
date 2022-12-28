@@ -20,4 +20,5 @@ public class Product implements WithId<Long> {
     @GeneratedValue
     private Long id;
     private String name;
+    private String description;
 }

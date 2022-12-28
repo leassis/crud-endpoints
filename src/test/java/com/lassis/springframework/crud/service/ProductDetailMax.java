@@ -20,6 +20,7 @@ public class ProductDetailMax implements WithId<Long> {
     @Id
     @GeneratedValue
     private Long id;
+
     @ManyToOne(optional = false)
     private ProductDetail productDetail;
 }
