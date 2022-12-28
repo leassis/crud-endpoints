@@ -21,8 +21,9 @@ import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Stack;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -120,7 +121,7 @@ class CRUDAPIConfiguration {
                                   int level)
             throws javax.servlet.ServletException, java.io.IOException {
 
-        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+        Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
         Serializable data = dtoConverter.toDto(service.create(idChain, body));
@@ -134,7 +135,7 @@ class CRUDAPIConfiguration {
                                     CRUDPathProperties crudPathProperties,
                                     int level) {
 
-        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+        Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         Pageable pageable = getPageable(req, crudPathProperties.getPageSize());
         Page<Serializable> pageContent = service.all(idChain, pageable)
@@ -150,7 +151,7 @@ class CRUDAPIConfiguration {
                                         IdMapper<Serializable> idMapper,
                                         int level) {
 
-        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+        Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
@@ -166,7 +167,7 @@ class CRUDAPIConfiguration {
                                   int level)
             throws javax.servlet.ServletException, java.io.IOException {
 
-        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+        Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
@@ -181,7 +182,7 @@ class CRUDAPIConfiguration {
                                   IdMapper<Serializable> idMapper,
                                   int level) {
 
-        Stack<Serializable> idChain = toIdChain(idMapper, req, level);
+        Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
@@ -190,12 +191,12 @@ class CRUDAPIConfiguration {
     }
 
 
-    private static Stack<Serializable> toIdChain(IdMapper<Serializable> idMapper, ServerRequest req, int level) {
+    private static Queue<Serializable> toIdChain(IdMapper<Serializable> idMapper, ServerRequest req, int level) {
         return IntStream.range(0, level).boxed()
                 .map(i -> "id" + i)
                 .map(req::pathVariable)
                 .map(idMapper)
-                .collect(Collectors.toCollection(Stack::new));
+                .collect(Collectors.toCollection(LinkedList::new));
     }
 
     private Pagination toPagination(Page<Serializable> pageContent) {

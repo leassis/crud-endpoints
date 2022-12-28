@@ -18,8 +18,8 @@ import org.mockito.stubbing.Answer;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import java.util.LinkedList;
 import java.util.Optional;
-import java.util.Stack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -62,7 +62,7 @@ class SimpleCrudServiceTest {
         p.setName(FAKER.funnyName().name());
 
         when(repository.findById(eq(id))).thenReturn(Optional.of(p));
-        p = service.get(new Stack<>(), id);
+        p = service.get(new LinkedList<>(), id);
         assertThat(p).isNotNull();
     }
 
@@ -71,7 +71,7 @@ class SimpleCrudServiceTest {
         long id = FAKER.number().numberBetween(10, 20);
 
         when(repository.findById(eq(id))).thenReturn(Optional.empty());
-        NotFoundException ex = catchThrowableOfType(() -> service.get(new Stack<>(), id),
+        NotFoundException ex = catchThrowableOfType(() -> service.get(new LinkedList<>(), id),
                 NotFoundException.class);
         assertThat(ex.getMessage()).contains(id + " not found");
     }
@@ -87,7 +87,7 @@ class SimpleCrudServiceTest {
             Product prd1 = inv.getArgument(1);
             prd0.setName(prd1.getName());
             return null;
-        }).when(updateSetter).update(any(), eq(p));
+        }).when(updateSetter).update(eq(p), any());
 
         when(repository.save(any())).then((Answer<Product>) invocation -> {
             Product prd = invocation.getArgument(0);
@@ -96,7 +96,7 @@ class SimpleCrudServiceTest {
         });
         when(repository.findById(any())).thenReturn(Optional.of(p));
 
-        service.create(new Stack<>(), p);
+        service.create(new LinkedList<>(), p);
 
         verify(beforeSave).execute(any());
         verify(repository).save(any());
@@ -112,7 +112,7 @@ class SimpleCrudServiceTest {
 
         when(repository.findById(eq(id))).thenReturn(Optional.of(p));
         when(repository.save(eq(p))).thenReturn(p);
-        service.update(new Stack<>(), id, p);
+        service.update(new LinkedList<>(), id, p);
 
         verify(updateSetter).update(eq(p), eq(p));
         verify(beforeSave).execute(eq(p));
@@ -128,7 +128,7 @@ class SimpleCrudServiceTest {
         Product p = new Product();
         p.setId(id);
 
-        NotFoundException ex = catchThrowableOfType(() -> service.update(new Stack<>(), id, p),
+        NotFoundException ex = catchThrowableOfType(() -> service.update(new LinkedList<>(), id, p),
                 NotFoundException.class);
 
         assertThat(ex.getMessage()).contains(id + " not found");
@@ -141,7 +141,7 @@ class SimpleCrudServiceTest {
 
         when(repository.existsById(eq(id))).thenReturn(true);
 
-        service.deleteById(new Stack<>(), id);
+        service.deleteById(new LinkedList<>(), id);
 
         verify(repository).deleteById(eq(id));
     }
@@ -151,7 +151,7 @@ class SimpleCrudServiceTest {
         long id = FAKER.number().numberBetween(10, 20);
         when(repository.existsById(eq(id))).thenReturn(false);
 
-        NotFoundException ex = catchThrowableOfType(() -> service.deleteById(new Stack<>(), id),
+        NotFoundException ex = catchThrowableOfType(() -> service.deleteById(new LinkedList<>(), id),
                 NotFoundException.class);
 
         assertThat(ex.getMessage()).contains(id + " not found");
@@ -159,7 +159,7 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldGetAllProducts() {
-        service.all(new Stack<>(), Pageable.unpaged());
+        service.all(new LinkedList<>(), Pageable.unpaged());
         verify(repository).findAll(any(Pageable.class));
     }
 }

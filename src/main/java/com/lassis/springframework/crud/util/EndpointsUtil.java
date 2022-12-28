@@ -47,7 +47,8 @@ public class EndpointsUtil {
                 properties,
                 properties.getProperty(CRUD_PROPERTY_PREFIX + ".id-class"),
                 EndpointsUtil::containsEndpoint,
-                EndpointsUtil::endpointsPrefix
+                EndpointsUtil::endpointsPrefix,
+                null
         );
 
         return new CRUDProperties(
@@ -81,7 +82,8 @@ public class EndpointsUtil {
     private static Set<CRUDPathProperties> endpoints(Properties properties,
                                                      String idClass,
                                                      Predicate<String> filtering,
-                                                     Function<String, String> grouping) {
+                                                     Function<String, String> grouping,
+                                                     CRUDPathProperties parent) {
 
         Map<String, List<String>> map = properties.stringPropertyNames()
                 .stream()
@@ -105,8 +107,10 @@ public class EndpointsUtil {
                         Class.forName(idClass).asSubclass(Serializable.class),
                         Class.forName(dtoClass).asSubclass(Serializable.class),
                         Integer.parseInt(pageSize),
-                        endpoints(properties, idClass, containsSub, v -> subEndpointsPrefix(v, propertyPrefix))
+                        parent
                 );
+
+                endpoint.setSubPaths(endpoints(properties, idClass, containsSub, v -> subEndpointsPrefix(v, propertyPrefix), endpoint));
 
                 endpoints.add(endpoint);
             } catch (Exception e) {

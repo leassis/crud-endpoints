@@ -13,7 +13,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Stack;
+import java.util.Queue;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -23,7 +23,7 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     private final UpdateValuesSetter<E> updateSetter;
 
     @Override
-    public E create(Stack<ID> chain, E obj) {
+    public E create(Queue<ID> chain, E obj) {
         failIfMultiLevel(chain);
 
         if (Objects.nonNull(obj.getId())) {
@@ -34,7 +34,7 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     }
 
     @Override
-    public E update(Stack<ID> chain, ID id, E obj) {
+    public E update(Queue<ID> chain, ID id, E obj) {
         failIfMultiLevel(chain);
 
         if (Objects.isNull(obj.getId()) || !Objects.equals(id, obj.getId())) {
@@ -44,12 +44,12 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
         E dbObj = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException(id));
 
-        updateSetter.update(dbObj, obj);
+        updateSetter.update(obj, dbObj);
         return save(dbObj);
     }
 
     @Override
-    public E get(Stack<ID> chain, ID id) {
+    public E get(Queue<ID> chain, ID id) {
         failIfMultiLevel(chain);
 
         return repository.findById(id)
@@ -57,14 +57,14 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     }
 
     @Override
-    public Page<E> all(Stack<ID> chain, Pageable pageable) {
+    public Page<E> all(Queue<ID> chain, Pageable pageable) {
         failIfMultiLevel(chain);
 
         return repository.findAll(pageable);
     }
 
     @Override
-    public void deleteById(Stack<ID> chain, ID id) {
+    public void deleteById(Queue<ID> chain, ID id) {
         failIfMultiLevel(chain);
 
         if (!repository.existsById(id)) {

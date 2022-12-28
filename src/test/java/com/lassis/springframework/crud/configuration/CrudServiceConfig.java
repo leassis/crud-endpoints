@@ -1,15 +1,14 @@
 package com.lassis.springframework.crud.configuration;
 
+import com.lassis.springframework.crud.repository.ProductDetailMaxRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
 import com.lassis.springframework.crud.repository.ProductRepository;
-import com.lassis.springframework.crud.service.CrudService;
+import com.lassis.springframework.crud.service.ParentChildResolver;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
-import com.lassis.springframework.crud.service.TwoLevelCrudService;
-import com.lassis.springframework.crud.service.TwoLevelRepository;
+import com.lassis.springframework.crud.service.ProductDetailMax;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -19,12 +18,10 @@ import java.util.Optional;
 public class CrudServiceConfig {
 
     @Bean
-    @Primary
-    CrudService<ProductDetail, Long> productDetailCrudService(ProductRepository productRepository,
-                                                              ProductDetailRepository productDetailRepository,
-                                                              CrudService<ProductDetail, Long> service) {
+    ParentChildResolver<Product, ProductDetail, Long> productDetailTwoLevelRepository(ProductRepository productRepository,
+                                                                                      ProductDetailRepository productDetailRepository) {
 
-        return new TwoLevelCrudService<>(service, new TwoLevelRepository<Product, ProductDetail, Long>() {
+        return new ParentChildResolver<Product, ProductDetail, Long>() {
             @Override
             public void setParent(Product parent, ProductDetail child) {
                 child.setProduct(parent);
@@ -33,11 +30,6 @@ public class CrudServiceConfig {
             @Override
             public Optional<Product> findParentById(Long parentId) {
                 return productRepository.findById(parentId);
-            }
-
-            @Override
-            public Optional<ProductDetail> findByParentIdAndId(Long parentId, Long childId) {
-                return productDetailRepository.findByProductIdAndId(parentId, childId);
             }
 
             @Override
@@ -55,11 +47,42 @@ public class CrudServiceConfig {
                 return productRepository.existsById(parentId);
             }
 
-            @Override
-            public void deleteByParentIdAndId(Long parentId, Long childId) {
-                productDetailRepository.deleteByProductIdAndId(parentId, childId);
-            }
-        });
+        };
 
     }
+
+    @Bean
+    ParentChildResolver<ProductDetail, ProductDetailMax, Long> productDetailMaxTwoLevelRepository(ProductDetailRepository parentRepository,
+                                                                                                  ProductDetailMaxRepository childRepository) {
+
+        return new ParentChildResolver<ProductDetail, ProductDetailMax, Long>() {
+            @Override
+            public void setParent(ProductDetail parent, ProductDetailMax child) {
+                child.setProductDetail(parent);
+            }
+
+            @Override
+            public Optional<ProductDetail> findParentById(Long parentId) {
+                return parentRepository.findById(parentId);
+            }
+
+            @Override
+            public Page<ProductDetailMax> findAllByParentId(Long parentId, Pageable pageable) {
+                return childRepository.findByProductDetailId(parentId, pageable);
+            }
+
+            @Override
+            public boolean existsByParentIdAndId(Long parentId, Long childId) {
+                return childRepository.existsByProductDetailIdAndId(parentId, childId);
+            }
+
+            @Override
+            public boolean existsByParentId(Long parentId) {
+                return parentRepository.existsById(parentId);
+            }
+
+        };
+
+    }
+
 }

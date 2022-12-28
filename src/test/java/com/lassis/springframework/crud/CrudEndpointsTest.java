@@ -3,11 +3,13 @@ package com.lassis.springframework.crud;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
+import com.lassis.springframework.crud.repository.ProductDetailMaxRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
 import com.lassis.springframework.crud.repository.ProductRepository;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
+import com.lassis.springframework.crud.service.ProductDetailMax;
 import com.lassis.springframework.crud.service.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,10 +70,14 @@ class CrudEndpointsTest {
     @Autowired
     ProductDetailRepository productDetailRepository;
 
+    @Autowired
+    ProductDetailMaxRepository productDetailMaxRepository;
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setup() {
+        productDetailMaxRepository.deleteAll();
         productDetailRepository.deleteAll();
         productRepository.deleteAll();
     }
@@ -260,7 +266,7 @@ class CrudEndpointsTest {
 
 
     @Test
-    void shouldDoAMultiLevelGet() throws Exception {
+    void shouldDoATwoLevelGetAll() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
         p = productRepository.save(p);
 
@@ -283,7 +289,7 @@ class CrudEndpointsTest {
     }
 
     @Test
-    void shouldBeNotFoundAMultiLevelGet() throws Exception {
+    void shouldBeNotFoundATwoLevelGet() throws Exception {
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/9999/details")
                 .accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
@@ -291,7 +297,7 @@ class CrudEndpointsTest {
     }
 
     @Test
-    void shouldDoAMultiLevelGetById() throws Exception {
+    void shouldDoATwoLevelGetById() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
         p = productRepository.save(p);
 
@@ -307,7 +313,7 @@ class CrudEndpointsTest {
     }
 
     @Test
-    void shouldDoAmultiLevelCreate() throws Exception {
+    void shouldDoATwoLevelCreate() throws Exception {
         Product p = newProduct(FAKER.funnyName().name());
         p = productRepository.save(p);
 
@@ -324,11 +330,30 @@ class CrudEndpointsTest {
                 .andExpect(status().isOk());
     }
 
-    private static ProductDetail newProductDetail(String detail, Product product) {
-        ProductDetail d = new ProductDetail();
-        d.setDetail(detail);
-        d.setProduct(product);
-        return d;
+    @Test
+    void shouldDoAThreeLevelGetAll() throws Exception {
+        Product p = newProduct(FAKER.funnyName().name());
+        p = productRepository.save(p);
+
+        ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
+        d = productDetailRepository.save(d);
+
+        ProductDetailMax dmax = new ProductDetailMax();
+        dmax.setProductDetail(d);
+        dmax = productDetailMaxRepository.save(dmax);
+
+        Product p1 = newProduct(FAKER.funnyName().name());
+        productRepository.save(p1);
+
+        ProductDetail d1 = newProductDetail(FAKER.funnyName().name(), p1);
+        productDetailRepository.save(d1);
+
+        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details/" + d.getId() + "/details-max")
+                .accept(MediaType.APPLICATION_JSON_VALUE);
+        mockMvc.perform(get)
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id", is(dmax.getId()), Long.class))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -346,6 +371,13 @@ class CrudEndpointsTest {
                 .andExpect(jsonPath("$.data.name").value(u.getName()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(status().isOk());
+    }
+
+    private static ProductDetail newProductDetail(String detail, Product product) {
+        ProductDetail d = new ProductDetail();
+        d.setDetail(detail);
+        d.setProduct(product);
+        return d;
     }
 
 }

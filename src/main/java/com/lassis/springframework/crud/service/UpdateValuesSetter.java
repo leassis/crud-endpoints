@@ -13,10 +13,10 @@ import java.io.Serializable;
 public interface UpdateValuesSetter<T extends WithId<? extends Serializable>> {
 
     /**
-     * convert in to an entity
+     * convert from to an to
      *
-     * @param entity entity that was loaded from entityManager
-     * @param in     the entity received as input
+     * @param from the to received as input
+     * @param to   to that was loaded from entityManager
      */
-    void update(T entity, T in);
+    void update(T from, T to);
 }
