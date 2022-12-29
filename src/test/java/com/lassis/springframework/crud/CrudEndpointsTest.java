@@ -27,7 +27,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.util.Comparator;
@@ -41,6 +40,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -204,7 +204,7 @@ class CrudEndpointsTest {
         int elem = 0;
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products?size=" + pageSize).accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
-                .andDo(MockMvcResultHandlers.print())
+                .andDo(print())
                 .andExpect(jsonPath("$.data", hasSize(pageSize)))
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
@@ -217,7 +217,7 @@ class CrudEndpointsTest {
         elem = 3;
         get = MockMvcRequestBuilders.get("/api/products?page=P1S3").accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
-                .andDo(MockMvcResultHandlers.print())
+                .andDo(print())
                 .andExpect(jsonPath("$.data", hasSize(pageSize)))
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
@@ -230,7 +230,7 @@ class CrudEndpointsTest {
         elem = 6;
         get = MockMvcRequestBuilders.get("/api/products?page=P2S3").accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
-                .andDo(MockMvcResultHandlers.print())
+                .andDo(print())
                 .andExpect(jsonPath("$.data", hasSize(pageSize)))
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
@@ -243,7 +243,7 @@ class CrudEndpointsTest {
         elem = 3;
         get = MockMvcRequestBuilders.get("/api/products?page=P1S3").accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
-                .andDo(MockMvcResultHandlers.print())
+                .andDo(print())
                 .andExpect(jsonPath("$.data", hasSize(pageSize)))
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
@@ -361,7 +361,6 @@ class CrudEndpointsTest {
         User u = new User();
         u.setName(FAKER.funnyName().name());
 
-
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/users")
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -373,6 +372,21 @@ class CrudEndpointsTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void shouldFailOnValidation() throws Exception {
+        User u = new User();
+
+        MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/users")
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(u));
+
+        mockMvc.perform(post)
+                .andExpect(jsonPath("$.violations", hasSize(1)))
+                .andExpect(jsonPath("$.violations[0].field").value("name"))
+                .andExpect(jsonPath("$.violations[0].reason").value("must not be blank"))
+                .andExpect(status().isBadRequest());
+    }
     private static ProductDetail newProductDetail(String detail, Product product) {
         ProductDetail d = new ProductDetail();
         d.setDetail(detail);

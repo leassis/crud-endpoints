@@ -1,10 +1,14 @@
 package com.lassis.springframework.crud.configuration;
 
 import com.lassis.springframework.crud.entity.WithId;
+import com.lassis.springframework.crud.exception.ValidationException;
+import com.lassis.springframework.crud.pojo.BodyValidation;
+import com.lassis.springframework.crud.pojo.BodyValidation.BodyContent;
 import com.lassis.springframework.crud.pojo.Pagination;
 import com.lassis.springframework.crud.pojo.Result;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.DtoConverter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
@@ -20,21 +24,28 @@ import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static org.springframework.core.ResolvableType.forClassWithGenerics;
 import static org.springframework.web.servlet.function.RequestPredicates.path;
 import static org.springframework.web.servlet.function.RouterFunctions.route;
 
 @Slf4j
+@RequiredArgsConstructor
 class CRUDAPIConfiguration {
     private static final Pattern PAGE_PATTERN = Pattern.compile("^(P|F)\\d+S\\d+$");
     private static final DtoConverter<Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
@@ -52,6 +63,12 @@ class CRUDAPIConfiguration {
     @Bean
     IdMapper<UUID> uuidIdMapper() {
         return UUID::fromString;
+    }
+
+    @Bean
+    Validator validator() {
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        return validatorFactory.getValidator();
     }
 
     @Bean
@@ -123,9 +140,14 @@ class CRUDAPIConfiguration {
 
         Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
-        WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
-        Serializable data = dtoConverter.toDto(service.create(idChain, body));
-        return ServerResponse.ok().body(Result.of(data));
+        try {
+            WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
+            Serializable data = dtoConverter.toDto(service.create(idChain, body));
+            return ServerResponse.ok().body(Result.of(data));
+        } catch (ValidationException e) {
+            return processValidationException(e);
+        }
+
     }
 
     private ServerResponse retrieve(ServerRequest req,
@@ -171,10 +193,14 @@ class CRUDAPIConfiguration {
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
-        WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
+        try {
+            WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
 
-        Serializable data = dtoConverter.toDto(service.update(idChain, id, body));
-        return ServerResponse.ok().body(Result.of(data));
+            Serializable data = dtoConverter.toDto(service.update(idChain, id, body));
+            return ServerResponse.ok().body(Result.of(data));
+        } catch (ValidationException e) {
+            return processValidationException(e);
+        }
     }
 
     private ServerResponse delete(ServerRequest req,
@@ -190,6 +216,14 @@ class CRUDAPIConfiguration {
         return ServerResponse.noContent().build();
     }
 
+
+    private static ServerResponse processValidationException(ValidationException e) {
+        BodyValidation bodyValidation = e.getErrors()
+                .stream()
+                .map(v -> new BodyContent(v.getPropertyPath().toString(), v.getMessage()))
+                .collect(collectingAndThen(Collectors.toSet(), BodyValidation::new));
+        return ServerResponse.badRequest().body(bodyValidation);
+    }
 
     private static Queue<Serializable> toIdChain(IdMapper<Serializable> idMapper, ServerRequest req, int level) {
         return IntStream.range(0, level).boxed()
@@ -237,9 +271,15 @@ class CRUDAPIConfiguration {
 
     private WithId<Serializable> getBody(DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
                                          Class<? extends Serializable> clazz, ServerRequest req)
-            throws javax.servlet.ServletException, java.io.IOException {
+            throws javax.servlet.ServletException, java.io.IOException, ValidationException {
 
         Serializable body = req.body(clazz);
+
+        Set<ConstraintViolation<Serializable>> errors = validator().validate(body);
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
         return dtoConverter.fromDto(body);
     }
 
