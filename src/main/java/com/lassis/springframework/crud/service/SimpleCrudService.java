@@ -37,7 +37,7 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     public E update(Queue<ID> chain, ID id, E obj) {
         failIfMultiLevel(chain);
 
-        if (Objects.isNull(obj.getId()) || !Objects.equals(id, obj.getId())) {
+        if (Objects.nonNull(obj.getId()) && !Objects.equals(id, obj.getId())) {
             throw new UpdateIdConflictException(id, obj.getId());
         }
 
