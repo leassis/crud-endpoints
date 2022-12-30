@@ -85,7 +85,7 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                         log.info("bean {} of type {} has been created and it is now available in the context, " +
                                 "if you like to override this bean create a bean with name {}", beanName, crudServiceType, beanName);
 
-                        return createExecutorChain(endpoint, bf, rootService, true);
+                        return createExecutorChain(endpoint, bf, rootService);
                     }).getBeanDefinition()
             );
         }
@@ -93,7 +93,7 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
         endpoint.getSubPaths().forEach(sub -> registryCrudService(bdr, sub, prefixName + endpoint.getPath()));
     }
 
-    private static CrudService<WithId<Serializable>, Serializable> createExecutorChain(CRUDPathProperties endpoint, BeanFactory bf, CrudService<WithId<Serializable>, Serializable> rootService, boolean executeFindAll) {
+    private static CrudService<WithId<Serializable>, Serializable> createExecutorChain(CRUDPathProperties endpoint, BeanFactory bf, CrudService<WithId<Serializable>, Serializable> rootService) {
         final CRUDPathProperties parent = endpoint.getParent();
         if (Objects.isNull(parent)) {
             return rootService;
@@ -107,8 +107,8 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
         ObjectProvider<ParentChildResolver<WithId<Serializable>, WithId<Serializable>, Serializable>> subRepoProvider = bf.getBeanProvider(subRepoType);
         ParentChildResolver<WithId<Serializable>, WithId<Serializable>, Serializable> subRepo = subRepoProvider.getObject();
 
-        CrudService<WithId<Serializable>, Serializable> twoLevelCrudService = new MultiLevelCrudService<>(rootService, subRepo, executeFindAll);
-        return createExecutorChain(endpoint.getParent(), bf, twoLevelCrudService, false);
+        CrudService<WithId<Serializable>, Serializable> multiLevelService = new MultiLevelCrudService<>(rootService, subRepo);
+        return createExecutorChain(endpoint.getParent(), bf, multiLevelService);
     }
 
     private String createCrudServiceBeanName(CRUDPathProperties endpoint, String prefixName) {

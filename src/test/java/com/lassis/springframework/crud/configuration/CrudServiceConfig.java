@@ -1,12 +1,12 @@
 package com.lassis.springframework.crud.configuration;
 
-import com.lassis.springframework.crud.repository.ProductDetailMaxRepository;
+import com.lassis.springframework.crud.repository.ProductDetailLanguageRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
 import com.lassis.springframework.crud.repository.ProductRepository;
+import com.lassis.springframework.crud.service.Language;
 import com.lassis.springframework.crud.service.ParentChildResolver;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
-import com.lassis.springframework.crud.service.ProductDetailMax;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Page;
@@ -52,12 +52,12 @@ public class CrudServiceConfig {
     }
 
     @Bean
-    ParentChildResolver<ProductDetail, ProductDetailMax, Long> productDetailMaxTwoLevelRepository(ProductDetailRepository parentRepository,
-                                                                                                  ProductDetailMaxRepository childRepository) {
+    ParentChildResolver<ProductDetail, Language, Long> productDetailMaxTwoLevelRepository(ProductDetailRepository parentRepository,
+                                                                                          ProductDetailLanguageRepository childRepository) {
 
-        return new ParentChildResolver<ProductDetail, ProductDetailMax, Long>() {
+        return new ParentChildResolver<ProductDetail, Language, Long>() {
             @Override
-            public void setParent(ProductDetail parent, ProductDetailMax child) {
+            public void setParent(ProductDetail parent, Language child) {
                 child.setProductDetail(parent);
             }
 
@@ -67,7 +67,7 @@ public class CrudServiceConfig {
             }
 
             @Override
-            public Page<ProductDetailMax> findAllByParentId(Long parentId, Pageable pageable) {
+            public Page<Language> findAllByParentId(Long parentId, Pageable pageable) {
                 return childRepository.findByProductDetailId(parentId, pageable);
             }
 

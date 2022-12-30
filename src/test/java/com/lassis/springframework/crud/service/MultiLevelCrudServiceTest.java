@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.LinkedList;
 import java.util.Optional;
 
+import static com.lassis.springframework.crud.CrudEndpointsTest.newProduct;
+import static com.lassis.springframework.crud.CrudEndpointsTest.newProductDetail;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +26,7 @@ import static org.mockito.Mockito.when;
 class MultiLevelCrudServiceTest {
     private static final Faker FAKER = Faker.instance();
     @Mock
-    CrudService<ProductDetail, Long> crudService;
+    CrudService<ProductDetail, Long> rootService;
 
     @Mock
     ParentChildResolver<Product, ProductDetail, Long> parentChildResolver;
@@ -33,7 +35,7 @@ class MultiLevelCrudServiceTest {
 
     @BeforeEach
     void setup() {
-        service = new MultiLevelCrudService<>(crudService, parentChildResolver, true);
+        service = new MultiLevelCrudService<>(rootService, parentChildResolver);
     }
 
     @Test
@@ -58,7 +60,7 @@ class MultiLevelCrudServiceTest {
 
         // assert
         assertThat(chain).isEmpty();
-        verify(crudService).create(any(), eq(productDetail));
+        verify(rootService).create(any(), eq(productDetail));
         verify(parentChildResolver).setParent(eq(product), eq(productDetail));
     }
 
@@ -83,7 +85,7 @@ class MultiLevelCrudServiceTest {
 
         // assert
         assertThat(chain).isEmpty();
-        verify(crudService).update(any(), eq(productDetail.getId()), eq(productDetail));
+        verify(rootService).update(any(), eq(productDetail.getId()), eq(productDetail));
     }
 
     @Test
@@ -106,7 +108,7 @@ class MultiLevelCrudServiceTest {
 
         // assert
         assertThat(chain).isEmpty();
-        verify(crudService).get(any(), eq(productDetail.getId()));
+        verify(rootService).get(any(), eq(productDetail.getId()));
     }
 
     @Test
@@ -133,17 +135,19 @@ class MultiLevelCrudServiceTest {
 
     @Test
     void should_delegate_find_all() {
-        MultiLevelCrudService<Product, ProductDetail, Long> service = new MultiLevelCrudService<>(crudService, parentChildResolver, false);
-
         // given
         Product product = new Product();
         product.setId(FAKER.number().randomNumber());
 
-        when(parentChildResolver.existsByParentId(eq(product.getId())))
+        ProductDetail detail = newProductDetail(product);
+        detail.setId(FAKER.number().randomNumber());
+
+        when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(detail.getId())))
                 .thenReturn(true);
 
         LinkedList<Long> chain = new LinkedList<>();
         chain.add(product.getId());
+        chain.add(detail.getId());
 
         Pageable unpaged = Pageable.unpaged();
 
@@ -151,8 +155,8 @@ class MultiLevelCrudServiceTest {
         service.all(chain, unpaged);
 
         // when
-        assertThat(chain).isEmpty();
-        verify(crudService).all(any(), eq(unpaged));
+        assertThat(chain).hasSize(1);
+        verify(rootService).all(any(), eq(unpaged));
     }
 
     @Test
@@ -175,16 +179,16 @@ class MultiLevelCrudServiceTest {
 
         // assert
         assertThat(chain).isEmpty();
-        verify(crudService).deleteById(any(), eq(productDetail.getId()));
+        verify(rootService).deleteById(any(), eq(productDetail.getId()));
     }
 
     @Test
     void should_not_find_parent() {
         // given
-        Product product = new Product();
+        Product product = newProduct();
         product.setId(FAKER.number().randomNumber());
 
-        ProductDetail productDetail = new ProductDetail();
+        ProductDetail productDetail = newProductDetail(null);
         productDetail.setId(FAKER.number().randomNumber());
 
         LinkedList<Long> chain = new LinkedList<>();

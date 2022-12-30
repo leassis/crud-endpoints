@@ -11,6 +11,7 @@ import com.lassis.springframework.crud.service.DtoConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ResolvableType;
@@ -66,9 +67,11 @@ class CRUDAPIConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(Validator.class)
     Validator validator() {
-        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
-        return validatorFactory.getValidator();
+        try (ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {
+            return validatorFactory.getValidator();
+        }
     }
 
     @Bean
@@ -142,8 +145,9 @@ class CRUDAPIConfiguration {
 
         try {
             WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
-            Serializable data = dtoConverter.toDto(service.create(idChain, body));
-            return ServerResponse.ok().body(Result.of(data));
+            WithId<Serializable> created = service.create(idChain, body);
+            Serializable data = dtoConverter.toDto(created);
+            return ServerResponse.created(req.uri().resolve("/" + created.getId())).body(Result.of(data));
         } catch (ValidationException e) {
             return processValidationException(e);
         }

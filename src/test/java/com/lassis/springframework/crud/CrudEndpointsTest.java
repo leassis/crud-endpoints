@@ -3,13 +3,13 @@ package com.lassis.springframework.crud;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
-import com.lassis.springframework.crud.repository.ProductDetailMaxRepository;
+import com.lassis.springframework.crud.repository.ProductDetailLanguageRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
 import com.lassis.springframework.crud.repository.ProductRepository;
 import com.lassis.springframework.crud.service.CrudService;
+import com.lassis.springframework.crud.service.Language;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
-import com.lassis.springframework.crud.service.ProductDetailMax;
 import com.lassis.springframework.crud.service.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureTestEntityManager
 @AutoConfigureDataJpa
 @AutoConfigureMockMvc
-class CrudEndpointsTest {
+public class CrudEndpointsTest {
 
     private static final Faker FAKER = Faker.instance();
 
@@ -71,20 +71,20 @@ class CrudEndpointsTest {
     ProductDetailRepository productDetailRepository;
 
     @Autowired
-    ProductDetailMaxRepository productDetailMaxRepository;
+    ProductDetailLanguageRepository productDetailLanguageRepository;
 
     ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setup() {
-        productDetailMaxRepository.deleteAll();
+        productDetailLanguageRepository.deleteAll();
         productDetailRepository.deleteAll();
         productRepository.deleteAll();
     }
 
     @Test
     void shouldTryDoCreateWithProductId() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p.setId(10L);
 
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/products")
@@ -98,7 +98,7 @@ class CrudEndpointsTest {
 
     @Test
     void shouldDoCreate() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
 
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/products")
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -108,12 +108,12 @@ class CrudEndpointsTest {
         mockMvc.perform(post)
                 .andExpect(jsonPath("$.data.name", is(p.getName())))
                 .andExpect(jsonPath("$.data.id", notNullValue()))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
     }
 
     @Test
     void shouldDoGet() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p = productRepository.save(p);
 
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products").accept(MediaType.APPLICATION_JSON_VALUE);
@@ -136,7 +136,7 @@ class CrudEndpointsTest {
 
     @Test
     void shouldDoAGetById() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p = productRepository.save(p);
 
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId()).accept(MediaType.APPLICATION_JSON_VALUE);
@@ -148,7 +148,7 @@ class CrudEndpointsTest {
 
     @Test
     void shouldDoUpdate() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p = productRepository.save(p);
 
         p.setName(FAKER.backToTheFuture().character());
@@ -172,10 +172,10 @@ class CrudEndpointsTest {
 
     @Test
     void shouldTryDoUpdateWithConflictId() throws Exception {
-        Product create = newProduct(FAKER.funnyName().name());
+        Product create = newProduct();
         create = productRepository.save(create);
 
-        Product update = newProduct(FAKER.funnyName().name());
+        Product update = newProduct();
         update.setId(10L);
 
         MockHttpServletRequestBuilder put = MockMvcRequestBuilders.put("/api/products/" + create.getId())
@@ -191,7 +191,7 @@ class CrudEndpointsTest {
     @Test
     void shouldDoAGetWithPagination() throws Exception {
         List<Product> toSave = IntStream.range(0, 10)
-                .mapToObj(i -> newProduct(FAKER.funnyName().name()))
+                .mapToObj(i -> newProduct())
                 .collect(Collectors.toList());
 
         List<Product> products = StreamSupport.stream(productRepository.saveAll(toSave).spliterator(), false)
@@ -243,14 +243,14 @@ class CrudEndpointsTest {
         elem = 3;
         get = MockMvcRequestBuilders.get("/api/products?page=P1S3").accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
+                .andExpect(status().isOk())
                 .andDo(print())
                 .andExpect(jsonPath("$.data", hasSize(pageSize)))
                 .andExpect(jsonPath("$.data[0].id", is(products.get(elem).getId()), Long.class))
                 .andExpect(jsonPath("$.data[0].name", is(products.get(elem).getName())))
                 .andExpect(jsonPath("$.meta.first", is("F0S3")))
                 .andExpect(jsonPath("$.meta.prev", is("F0S3")))
-                .andExpect(jsonPath("$.meta.next", is("P2S3")))
-                .andExpect(status().isOk());
+                .andExpect(jsonPath("$.meta.next", is("P2S3")));
     }
 
     @Test
@@ -258,34 +258,28 @@ class CrudEndpointsTest {
         assertThat(crudService).isNotNull();
     }
 
-    private static Product newProduct(String defaultNewProductName) {
-        Product p = new Product();
-        p.setName(defaultNewProductName);
-        return p;
-    }
-
 
     @Test
     void shouldDoATwoLevelGetAll() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p = productRepository.save(p);
 
-        ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
+        ProductDetail d = newProductDetail(p);
         d = productDetailRepository.save(d);
 
-        Product p1 = newProduct(FAKER.funnyName().name());
+        Product p1 = newProduct();
         productRepository.save(p1);
 
-        ProductDetail d1 = newProductDetail(FAKER.funnyName().name(), p1);
+        ProductDetail d1 = newProductDetail(p1);
         productDetailRepository.save(d1);
 
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details")
                 .accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].detail", is(d.getDetail())))
-                .andExpect(jsonPath("$.data[0].id", is(d.getId()), Long.class))
-                .andExpect(status().isOk());
+                .andExpect(jsonPath("$.data[0].id", is(d.getId()), Long.class));
     }
 
     @Test
@@ -298,26 +292,26 @@ class CrudEndpointsTest {
 
     @Test
     void shouldDoATwoLevelGetById() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p = productRepository.save(p);
 
-        ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
+        ProductDetail d = newProductDetail(p);
         d = productDetailRepository.save(d);
 
         MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details/" + d.getId())
                 .accept(MediaType.APPLICATION_JSON_VALUE);
         mockMvc.perform(get)
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.detail", is(d.getDetail())))
-                .andExpect(jsonPath("$.data.id", is(d.getId()), Long.class))
-                .andExpect(status().isOk());
+                .andExpect(jsonPath("$.data.id", is(d.getId()), Long.class));
     }
 
     @Test
     void shouldDoATwoLevelCreate() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
+        Product p = newProduct();
         p = productRepository.save(p);
 
-        ProductDetail detail = newProductDetail(FAKER.funnyName().name(), p);
+        ProductDetail detail = newProductDetail(p);
 
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/products/" + p.getId() + "/details")
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -325,35 +319,9 @@ class CrudEndpointsTest {
                 .content(objectMapper.writeValueAsBytes(detail));
 
         mockMvc.perform(post)
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.detail", is(detail.getDetail())))
-                .andExpect(jsonPath("$.data.id", notNullValue()))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void shouldDoAThreeLevelGetAll() throws Exception {
-        Product p = newProduct(FAKER.funnyName().name());
-        p = productRepository.save(p);
-
-        ProductDetail d = newProductDetail(FAKER.funnyName().name(), p);
-        d = productDetailRepository.save(d);
-
-        ProductDetailMax dmax = new ProductDetailMax();
-        dmax.setProductDetail(d);
-        dmax = productDetailMaxRepository.save(dmax);
-
-        Product p1 = newProduct(FAKER.funnyName().name());
-        productRepository.save(p1);
-
-        ProductDetail d1 = newProductDetail(FAKER.funnyName().name(), p1);
-        productDetailRepository.save(d1);
-
-        MockHttpServletRequestBuilder get = MockMvcRequestBuilders.get("/api/products/" + p.getId() + "/details/" + d.getId() + "/details-max")
-                .accept(MediaType.APPLICATION_JSON_VALUE);
-        mockMvc.perform(get)
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].id", is(dmax.getId()), Long.class))
-                .andExpect(status().isOk());
+                .andExpect(jsonPath("$.data.id", notNullValue()));
     }
 
     @Test
@@ -367,9 +335,9 @@ class CrudEndpointsTest {
                 .content(objectMapper.writeValueAsBytes(u));
 
         mockMvc.perform(post)
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value(u.getName()))
-                .andExpect(jsonPath("$.data.id").doesNotExist())
-                .andExpect(status().isOk());
+                .andExpect(jsonPath("$.data.id").doesNotExist());
     }
 
     @Test
@@ -382,16 +350,30 @@ class CrudEndpointsTest {
                 .content(objectMapper.writeValueAsBytes(u));
 
         mockMvc.perform(post)
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.violations", hasSize(1)))
                 .andExpect(jsonPath("$.violations[0].field").value("name"))
-                .andExpect(jsonPath("$.violations[0].reason").value("must not be blank"))
-                .andExpect(status().isBadRequest());
+                .andExpect(jsonPath("$.violations[0].reason").value("must not be blank"));
     }
-    private static ProductDetail newProductDetail(String detail, Product product) {
+
+    public static Product newProduct() {
+        Product p = new Product();
+        p.setName(FAKER.funnyName().name());
+        p.setDescription(FAKER.harryPotter().quote());
+        return p;
+    }
+
+    public static ProductDetail newProductDetail(Product product) {
         ProductDetail d = new ProductDetail();
-        d.setDetail(detail);
+        d.setDetail(FAKER.funnyName().name());
         d.setProduct(product);
         return d;
+    }
+
+    public static Language getProductDetailLanguage(ProductDetail d) {
+        Language dmax = new Language();
+        dmax.setProductDetail(d);
+        return dmax;
     }
 
 }

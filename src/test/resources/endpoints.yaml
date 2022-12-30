@@ -22,13 +22,15 @@ crud:
             - put
             - delete
           sub:
-            - path: '/details-max'
-              entity-class: com.lassis.springframework.crud.service.ProductDetailMax
-              dto-class: com.lassis.springframework.crud.service.ProductDetailMax
+            - path: '/languages'
+              entity-class: com.lassis.springframework.crud.service.Language
+              dto-class: com.lassis.springframework.crud.service.Language
               page-size: 25
               methods:
                 - get
                 - post
+                - put
+                - delete
     - path: '/users'
       entity-class: com.lassis.springframework.crud.service.User
       dto-class: com.lassis.springframework.crud.dto.UserDto

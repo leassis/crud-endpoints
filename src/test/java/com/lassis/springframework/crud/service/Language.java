@@ -15,8 +15,8 @@ import javax.persistence.Table;
 @Setter
 @ToString
 @Entity
-@Table(name = "product_detail_max")
-public class ProductDetailMax implements WithId<Long> {
+@Table(name = "product_detail_language")
+public class Language implements WithId<Long> {
     @Id
     @GeneratedValue
     private Long id;
