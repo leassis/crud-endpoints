@@ -25,6 +25,7 @@
         <java.version>8</java.version>
         <scm.url>git@github.com:leassis/crud-endpoints.git</scm.url>
         <project.scm.id>github</project.scm.id>
+        <instancio.version>2.2.0</instancio.version>
     </properties>
 
     <scm>
@@ -85,9 +86,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.javafaker</groupId>
-            <artifactId>javafaker</artifactId>
-            <version>1.0.2</version>
+            <groupId>org.instancio</groupId>
+            <artifactId>instancio-junit</artifactId>
+            <version>${instancio.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

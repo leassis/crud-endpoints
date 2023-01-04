@@ -1,7 +1,6 @@
 package com.lassis.springframework.crud;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
 import com.lassis.springframework.crud.repository.ProductDetailLanguageRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
@@ -11,6 +10,9 @@ import com.lassis.springframework.crud.service.Language;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
 import com.lassis.springframework.crud.service.User;
+import org.instancio.Instancio;
+import org.instancio.Model;
+import org.instancio.Select;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,8 +57,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureDataJpa
 @AutoConfigureMockMvc
 public class CrudEndpointsTest {
-
-    private static final Faker FAKER = Faker.instance();
 
     @Autowired
     MockMvc mockMvc;
@@ -151,7 +151,7 @@ public class CrudEndpointsTest {
         Product p = newProduct();
         p = productRepository.save(p);
 
-        p.setName(FAKER.backToTheFuture().character());
+        p.setName(Instancio.create(String.class));
 
         MockHttpServletRequestBuilder put = MockMvcRequestBuilders.put("/api/products/" + p.getId())
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -326,8 +326,7 @@ public class CrudEndpointsTest {
 
     @Test
     void shouldDoCreateAUserAndReturnDto() throws Exception {
-        User u = new User();
-        u.setName(FAKER.funnyName().name());
+        User u = newUser();
 
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/users")
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -357,23 +356,29 @@ public class CrudEndpointsTest {
     }
 
     public static Product newProduct() {
-        Product p = new Product();
-        p.setName(FAKER.funnyName().name());
-        p.setDescription(FAKER.harryPotter().quote());
-        return p;
+        return Instancio.of(Product.class).lenient()
+                .ignore(Select.field("id"))
+                .create();
     }
 
     public static ProductDetail newProductDetail(Product product) {
-        ProductDetail d = new ProductDetail();
-        d.setDetail(FAKER.funnyName().name());
-        d.setProduct(product);
-        return d;
+        return Instancio.of(ProductDetail.class).lenient()
+                .ignore(Select.field("id"))
+                .set(Select.all(Product.class), product)
+                .create();
     }
 
-    public static Language getProductDetailLanguage(ProductDetail d) {
-        Language dmax = new Language();
-        dmax.setProductDetail(d);
-        return dmax;
+    public static User newUser() {
+        return Instancio.of(User.class).lenient()
+                .ignore(Select.field("id"))
+                .create();
+    }
+
+    public static Model<Language> getProductDetailLanguage(ProductDetail detail) {
+        return Instancio.of(Language.class).lenient()
+                .ignore(Select.field("id"))
+                .set(Select.all(ProductDetail.class), detail)
+                .toModel();
     }
 
 }

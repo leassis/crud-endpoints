@@ -10,6 +10,7 @@ import com.lassis.springframework.crud.repository.ProductRepository;
 import com.lassis.springframework.crud.service.Language;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,8 +90,8 @@ class ThreeLevelCrudEndpointsTest {
                 .andExpect(jsonPath("$.data.id", idCaptorMatcher, Long.class));
         Long detailId = idCaptorMatcher.getLastValue().orElseThrow(() -> new AssertionError("detail id response is null"));
 
-        Language dmax = getProductDetailLanguage(d);
-        mockMvc.perform(post(dmax, urlTemplate + "/" + productId + "/details/" + detailId + "/languages"))
+        Language language = Instancio.create(getProductDetailLanguage(d));
+        mockMvc.perform(post(language, urlTemplate + "/" + productId + "/details/" + detailId + "/languages"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id", idCaptorMatcher, Long.class));
     }
@@ -103,7 +104,7 @@ class ThreeLevelCrudEndpointsTest {
         ProductDetail d = newProductDetail(p);
         d = productDetailRepository.save(d);
 
-        Language lang = getProductDetailLanguage(d);
+        Language lang = Instancio.create(getProductDetailLanguage(d));
         lang = productDetailLanguageRepository.save(lang);
 
         String url = "/api/products/" + p.getId() + "/details/" + d.getId() + "/languages";

@@ -1,7 +1,7 @@
 package com.lassis.springframework.crud.service;
 
-import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.exception.NotFoundException;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,8 +29,6 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SimpleCrudServiceTest {
 
-    static final Faker FAKER = Faker.instance();
-
     @Mock
     PagingAndSortingRepository<Product, Long> repository;
 
@@ -50,20 +48,18 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldUGetProduct() {
-        long id = FAKER.number().numberBetween(10, 20);
-
-        Product p = new Product();
-        p.setId(id);
-        p.setName(FAKER.funnyName().name());
+        Product p = Instancio.create(Product.class);
+        Long id = p.getId();
 
         when(repository.findById(eq(id))).thenReturn(Optional.of(p));
+
         p = service.get(new LinkedList<>(), id);
         assertThat(p).isNotNull();
     }
 
     @Test
     void shouldNotGetProductProductNotFound() {
-        long id = FAKER.number().numberBetween(10, 20);
+        long id = Instancio.create(Long.class);
 
         when(repository.findById(eq(id))).thenReturn(Optional.empty());
         NotFoundException ex = catchThrowableOfType(() -> service.get(new LinkedList<>(), id),
@@ -74,8 +70,8 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldCreateProduct() {
-        Product p = new Product();
-        p.setName(FAKER.funnyName().name());
+        Product p = Instancio.create(Product.class);
+        p.setId(null);
 
         doAnswer(inv -> {
             Product prd0 = inv.getArgument(0);
@@ -99,11 +95,8 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldUpdateProduct() {
-        long id = FAKER.number().numberBetween(10, 20);
-
-        Product p = new Product();
-        p.setId(id);
-        p.setName(FAKER.funnyName().name());
+        Product p = Instancio.create(Product.class);
+        Long id = p.getId();
 
         when(repository.findById(eq(id))).thenReturn(Optional.of(p));
         when(repository.save(eq(p))).thenReturn(p);
@@ -116,7 +109,7 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldNotUpdateProductNotFound() {
-        long id = FAKER.number().numberBetween(10, 20);
+        long id = Instancio.create(Long.class);
 
         when(repository.findById(eq(id))).thenReturn(Optional.empty());
 
@@ -132,7 +125,7 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldDeleteProduct() {
-        long id = FAKER.number().numberBetween(10, 20);
+        long id = Instancio.create(Long.class);
 
         when(repository.existsById(eq(id))).thenReturn(true);
 
@@ -143,7 +136,7 @@ class SimpleCrudServiceTest {
 
     @Test
     void shouldNotDeleteProductProductNotFound() {
-        long id = FAKER.number().numberBetween(10, 20);
+        long id = Instancio.create(Long.class);
         when(repository.existsById(eq(id))).thenReturn(false);
 
         NotFoundException ex = catchThrowableOfType(() -> service.deleteById(new LinkedList<>(), id),
