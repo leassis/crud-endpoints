@@ -1,8 +1,8 @@
 package com.lassis.springframework.crud;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.configuration.EnableCrud;
+import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.repository.ProductDetailLanguageRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
 import com.lassis.springframework.crud.repository.ProductRepository;
@@ -11,6 +11,9 @@ import com.lassis.springframework.crud.service.Language;
 import com.lassis.springframework.crud.service.Product;
 import com.lassis.springframework.crud.service.ProductDetail;
 import com.lassis.springframework.crud.service.User;
+import org.instancio.Instancio;
+import org.instancio.Model;
+import org.instancio.Select;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,10 +32,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,8 +58,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureDataJpa
 @AutoConfigureMockMvc
 public class CrudEndpointsTest {
-
-    private static final Faker FAKER = Faker.instance();
 
     @Autowired
     MockMvc mockMvc;
@@ -151,7 +152,7 @@ public class CrudEndpointsTest {
         Product p = newProduct();
         p = productRepository.save(p);
 
-        p.setName(FAKER.backToTheFuture().character());
+        p.setName(Instancio.create(String.class));
 
         MockHttpServletRequestBuilder put = MockMvcRequestBuilders.put("/api/products/" + p.getId())
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -190,8 +191,9 @@ public class CrudEndpointsTest {
 
     @Test
     void shouldDoAGetWithPagination() throws Exception {
-        List<Product> toSave = IntStream.range(0, 10)
-                .mapToObj(i -> newProduct())
+        List<Product> toSave = Instancio.of(baseModel(Product.class))
+                .stream()
+                .limit(10)
                 .collect(Collectors.toList());
 
         List<Product> products = StreamSupport.stream(productRepository.saveAll(toSave).spliterator(), false)
@@ -326,8 +328,7 @@ public class CrudEndpointsTest {
 
     @Test
     void shouldDoCreateAUserAndReturnDto() throws Exception {
-        User u = new User();
-        u.setName(FAKER.funnyName().name());
+        User u = newUser();
 
         MockHttpServletRequestBuilder post = MockMvcRequestBuilders.post("/api/users")
                 .accept(MediaType.APPLICATION_JSON_VALUE)
@@ -357,23 +358,29 @@ public class CrudEndpointsTest {
     }
 
     public static Product newProduct() {
-        Product p = new Product();
-        p.setName(FAKER.funnyName().name());
-        p.setDescription(FAKER.harryPotter().quote());
-        return p;
+        return Instancio.create(baseModel(Product.class));
     }
 
     public static ProductDetail newProductDetail(Product product) {
-        ProductDetail d = new ProductDetail();
-        d.setDetail(FAKER.funnyName().name());
-        d.setProduct(product);
-        return d;
+        return Instancio.of(baseModel(ProductDetail.class))
+                .set(Select.all(Product.class), product)
+                .create();
     }
 
-    public static Language getProductDetailLanguage(ProductDetail d) {
-        Language dmax = new Language();
-        dmax.setProductDetail(d);
-        return dmax;
+    public static User newUser() {
+        return Instancio.create(baseModel(User.class));
+    }
+
+    public static Language getProductDetailLanguage(ProductDetail detail) {
+        return Instancio.of(baseModel(Language.class))
+                .set(Select.all(ProductDetail.class), detail)
+                .create();
+    }
+
+    public static <T extends WithId<? extends Serializable>> Model<T> baseModel(Class<T> clazz) {
+        return Instancio.of(clazz)
+                .ignore(Select.field("id"))
+                .toModel();
     }
 
 }

@@ -89,8 +89,8 @@ class ThreeLevelCrudEndpointsTest {
                 .andExpect(jsonPath("$.data.id", idCaptorMatcher, Long.class));
         Long detailId = idCaptorMatcher.getLastValue().orElseThrow(() -> new AssertionError("detail id response is null"));
 
-        Language dmax = getProductDetailLanguage(d);
-        mockMvc.perform(post(dmax, urlTemplate + "/" + productId + "/details/" + detailId + "/languages"))
+        Language language = getProductDetailLanguage(d);
+        mockMvc.perform(post(language, urlTemplate + "/" + productId + "/details/" + detailId + "/languages"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id", idCaptorMatcher, Long.class));
     }

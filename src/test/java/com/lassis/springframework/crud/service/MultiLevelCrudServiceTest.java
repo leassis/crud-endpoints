@@ -1,8 +1,8 @@
 package com.lassis.springframework.crud.service;
 
-import com.github.javafaker.Faker;
 import com.lassis.springframework.crud.exception.NotFoundException;
 import com.lassis.springframework.crud.exception.RelationshipNotFoundException;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MultiLevelCrudServiceTest {
-    private static final Faker FAKER = Faker.instance();
     @Mock
     CrudService<ProductDetail, Long> rootService;
 
@@ -41,7 +40,7 @@ class MultiLevelCrudServiceTest {
     @Test
     void should_create() {
         // given
-        long productId = FAKER.number().randomNumber();
+        long productId = Instancio.create(Long.class);
         Product product = new Product();
         product.setId(productId);
 
@@ -49,7 +48,7 @@ class MultiLevelCrudServiceTest {
                 .thenReturn(Optional.of(product));
 
         ProductDetail productDetail = new ProductDetail();
-        productDetail.setId(FAKER.number().randomNumber());
+        productDetail.setId(Instancio.create(Long.class));
         productDetail.setProduct(product);
 
         LinkedList<Long> chain = new LinkedList<>();
@@ -68,10 +67,10 @@ class MultiLevelCrudServiceTest {
     void should_update() {
         // given
         Product product = new Product();
-        product.setId(FAKER.number().randomNumber());
+        product.setId(Instancio.create(Long.class));
 
         ProductDetail productDetail = new ProductDetail();
-        productDetail.setId(FAKER.number().randomNumber());
+        productDetail.setId(Instancio.create(Long.class));
         productDetail.setProduct(product);
 
         when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
@@ -92,10 +91,10 @@ class MultiLevelCrudServiceTest {
     void should_get() {
         // given
         Product product = new Product();
-        product.setId(FAKER.number().randomNumber());
+        product.setId(Instancio.create(Long.class));
 
         ProductDetail productDetail = new ProductDetail();
-        productDetail.setId(FAKER.number().randomNumber());
+        productDetail.setId(Instancio.create(Long.class));
 
         when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
                 .thenReturn(true);
@@ -115,7 +114,7 @@ class MultiLevelCrudServiceTest {
     void should_find_all() {
         // given
         Product product = new Product();
-        product.setId(FAKER.number().randomNumber());
+        product.setId(Instancio.create(Long.class));
 
         when(parentChildResolver.existsByParentId(eq(product.getId())))
                 .thenReturn(true);
@@ -137,10 +136,10 @@ class MultiLevelCrudServiceTest {
     void should_delegate_find_all() {
         // given
         Product product = new Product();
-        product.setId(FAKER.number().randomNumber());
+        product.setId(Instancio.create(Long.class));
 
         ProductDetail detail = newProductDetail(product);
-        detail.setId(FAKER.number().randomNumber());
+        detail.setId(Instancio.create(Long.class));
 
         when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(detail.getId())))
                 .thenReturn(true);
@@ -163,10 +162,10 @@ class MultiLevelCrudServiceTest {
     void should_delete() {
         // given
         Product product = new Product();
-        product.setId(FAKER.number().randomNumber());
+        product.setId(Instancio.create(Long.class));
 
         ProductDetail productDetail = new ProductDetail();
-        productDetail.setId(FAKER.number().randomNumber());
+        productDetail.setId(Instancio.create(Long.class));
 
         when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
                 .thenReturn(true);
@@ -186,10 +185,10 @@ class MultiLevelCrudServiceTest {
     void should_not_find_parent() {
         // given
         Product product = newProduct();
-        product.setId(FAKER.number().randomNumber());
+        product.setId(Instancio.create(Long.class));
 
         ProductDetail productDetail = newProductDetail(null);
-        productDetail.setId(FAKER.number().randomNumber());
+        productDetail.setId(Instancio.create(Long.class));
 
         LinkedList<Long> chain = new LinkedList<>();
 
