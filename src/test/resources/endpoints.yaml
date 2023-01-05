@@ -5,6 +5,12 @@ crud:
     - path: '/products'
       entity-class: com.lassis.springframework.crud.service.Product
       dto-class: com.lassis.springframework.crud.service.Product
+      dto:
+        put: com.lassis.springframework.crud.service.Product
+        get: com.lassis.springframework.crud.service.Product
+        all: com.lassis.springframework.crud.service.Product
+        post: com.lassis.springframework.crud.service.Product
+
       page-size: 25
       methods:
         - get

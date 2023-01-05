@@ -35,11 +35,11 @@ class EndpointsUtilTest {
         assertThat(endpoint.getPath()).isEqualTo("/products");
         assertThat(endpoint.getEntityClass()).isEqualTo(Clz1.class);
         assertThat(endpoint.getDtoClass()).isEqualTo(Clz2.class);
-        assertThat(endpoint.getIdClass()).isEqualTo(Long.class);
+        // assertThat(endpoint.getIdClass()).isEqualTo(Long.class);
         assertThat(endpoint.getPageSize()).isEqualTo(25);
         assertThat(endpoint.getMethods()).containsExactlyInAnyOrder(DELETE, GET, PUT, POST);
 
-        ArrayList<CRUDPathProperties> subPaths = new ArrayList<>(endpoint.getSubPaths());
+        ArrayList<CRUDPathProperties> subPaths = new ArrayList<>(endpoint.getEndpoints());
         subPaths.sort(Comparator.comparing(CRUDPathProperties::getPath));
         assertThat(subPaths).hasSize(2);
 
@@ -49,17 +49,17 @@ class EndpointsUtilTest {
         assertThat(sub.getPath()).isEqualTo("/asub");
         assertThat(sub.getEntityClass()).isEqualTo(Clz5.class);
         assertThat(sub.getDtoClass()).isEqualTo(Clz5.class);
-        assertThat(sub.getIdClass()).isEqualTo(Long.class);
+        // assertThat(sub.getIdClass()).isEqualTo(Long.class);
         assertThat(sub.getPageSize()).isEqualTo(5);
         assertThat(sub.getMethods()).containsExactlyInAnyOrder(GET);
 
-        Set<CRUDPathProperties> subSubPaths = sub.getSubPaths();
+        Set<CRUDPathProperties> subSubPaths = sub.getEndpoints();
         assertThat(subSubPaths).hasSize(1);
         CRUDPathProperties subSub = subSubPaths.iterator().next();
         assertThat(subSub.getPath()).isEqualTo("/asub-sub");
         assertThat(subSub.getEntityClass()).isEqualTo(Clz6.class);
         assertThat(subSub.getDtoClass()).isEqualTo(Clz6.class);
-        assertThat(subSub.getIdClass()).isEqualTo(Long.class);
+        // assertThat(subSub.getIdClass()).isEqualTo(Long.class);
         assertThat(subSub.getPageSize()).isEqualTo(5);
         assertThat(subSub.getMethods()).containsExactlyInAnyOrder(POST);
 
@@ -68,7 +68,7 @@ class EndpointsUtilTest {
         assertThat(sub.getPath()).isEqualTo("/details");
         assertThat(sub.getEntityClass()).isEqualTo(Clz3.class);
         assertThat(sub.getDtoClass()).isEqualTo(Clz4.class);
-        assertThat(sub.getIdClass()).isEqualTo(Long.class);
+        // assertThat(sub.getIdClass()).isEqualTo(Long.class);
         assertThat(sub.getPageSize()).isEqualTo(10);
         assertThat(sub.getMethods()).containsExactlyInAnyOrder(GET);
 

@@ -48,7 +48,7 @@ import static org.springframework.web.servlet.function.RouterFunctions.route;
 @Slf4j
 @RequiredArgsConstructor
 class CRUDAPIConfiguration {
-    private static final Pattern PAGE_PATTERN = Pattern.compile("^(P|F)\\d+S\\d+$");
+    private static final Pattern PAGE_PATTERN = Pattern.compile("^[PF]\\d+S\\d+$");
     private static final DtoConverter<Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
 
     @Bean
@@ -123,7 +123,7 @@ class CRUDAPIConfiguration {
         });
         log.info("crud endpoint {} was created", path);
 
-        for (CRUDPathProperties sub : endpoint.getSubPaths()) {
+        for (CRUDPathProperties sub : endpoint.getEndpoints()) {
             String subPath = path + pathVar + sub.getPath();
 
             route = createRoute(context, route, sub, subPath, level + 1);

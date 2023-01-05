@@ -90,7 +90,7 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
             );
         }
 
-        endpoint.getSubPaths().forEach(sub -> registryCrudService(bdr, sub, prefixName + endpoint.getPath()));
+        endpoint.getEndpoints().forEach(sub -> registryCrudService(bdr, sub, prefixName + endpoint.getPath()));
     }
 
     private static CrudService<WithId<Serializable>, Serializable> createExecutorChain(CRUDPathProperties endpoint, BeanFactory bf, CrudService<WithId<Serializable>, Serializable> rootService) {

@@ -1,26 +1,38 @@
 package com.lassis.springframework.crud.configuration;
 
-import com.lassis.springframework.crud.entity.WithId;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-import org.springframework.http.HttpMethod;
-
 import java.io.Serializable;
 import java.util.Set;
 
-@Data
-@RequiredArgsConstructor
+import org.springframework.http.HttpMethod;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.lassis.springframework.crud.entity.WithId;
+
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
+
+@Getter
+@EqualsAndHashCode
+@ToString
 public class CRUDPathProperties {
-    private final String path;
-    private final Set<HttpMethod> methods;
-    private final Class<? extends WithId<? extends Serializable>> entityClass;
-    private final Class<? extends Serializable> idClass;
-    private final Class<? extends Serializable> dtoClass;
-    private final int pageSize;
-    private final CRUDPathProperties parent;
+    String path;
+
+    Set<HttpMethod> methods;
+
+    @JsonProperty("entity-class")
+    Class<? extends WithId<? extends Serializable>> entityClass;
+
+    @JsonProperty("dto-class")
+    Class<? extends Serializable> dtoClass;
+
+    @JsonProperty("page-size")
+    int pageSize;
+    
+    CRUDPathProperties parent;
+
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
-    Set<CRUDPathProperties> subPaths;
+    @JsonProperty("sub")
+    Set<CRUDPathProperties> endpoints;
 }
