@@ -2,6 +2,7 @@ package com.lassis.springframework.crud;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lassis.springframework.crud.configuration.EnableCrud;
+import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.repository.ProductDetailLanguageRepository;
 import com.lassis.springframework.crud.repository.ProductDetailRepository;
 import com.lassis.springframework.crud.repository.ProductRepository;
@@ -31,10 +32,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -190,8 +191,9 @@ public class CrudEndpointsTest {
 
     @Test
     void shouldDoAGetWithPagination() throws Exception {
-        List<Product> toSave = IntStream.range(0, 10)
-                .mapToObj(i -> newProduct())
+        List<Product> toSave = Instancio.of(baseModel(Product.class))
+                .stream()
+                .limit(10)
                 .collect(Collectors.toList());
 
         List<Product> products = StreamSupport.stream(productRepository.saveAll(toSave).spliterator(), false)
@@ -356,28 +358,28 @@ public class CrudEndpointsTest {
     }
 
     public static Product newProduct() {
-        return Instancio.of(Product.class).lenient()
-                .ignore(Select.field("id"))
-                .create();
+        return Instancio.create(baseModel(Product.class));
     }
 
     public static ProductDetail newProductDetail(Product product) {
-        return Instancio.of(ProductDetail.class).lenient()
-                .ignore(Select.field("id"))
+        return Instancio.of(baseModel(ProductDetail.class))
                 .set(Select.all(Product.class), product)
                 .create();
     }
 
     public static User newUser() {
-        return Instancio.of(User.class).lenient()
-                .ignore(Select.field("id"))
+        return Instancio.create(baseModel(User.class));
+    }
+
+    public static Language getProductDetailLanguage(ProductDetail detail) {
+        return Instancio.of(baseModel(Language.class))
+                .set(Select.all(ProductDetail.class), detail)
                 .create();
     }
 
-    public static Model<Language> getProductDetailLanguage(ProductDetail detail) {
-        return Instancio.of(Language.class).lenient()
+    public static <T extends WithId<? extends Serializable>> Model<T> baseModel(Class<T> clazz) {
+        return Instancio.of(clazz)
                 .ignore(Select.field("id"))
-                .set(Select.all(ProductDetail.class), detail)
                 .toModel();
     }
 
