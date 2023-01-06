@@ -11,20 +11,20 @@ import java.io.Serializable;
 import java.util.Queue;
 
 @RequiredArgsConstructor
-public class MultiLevelCrudService<P extends WithId<ID>, E extends WithId<ID>, ID extends Serializable> implements CrudService<E, ID> {
-    private final CrudService<E, ID> delegateTo;
-    private final ParentChildResolver<P, E, ID> parentChildResolver;
+public class MultiLevelCrudService<P extends WithId<I>, E extends WithId<I>, I extends Serializable> implements CrudService<E, I> {
+    private final CrudService<E, I> delegateTo;
+    private final ParentChildResolver<P, E, I> parentChildResolver;
 
     @Override
-    public E create(Queue<ID> chain, E obj) {
-        ID parentId = chain.remove();
+    public E create(Queue<I> chain, E obj) {
+        I parentI = chain.remove();
 
         if (chain.isEmpty()) {
-            P entity = parentChildResolver.findParentById(parentId)
-                    .orElseThrow(() -> new NotFoundException(parentId));
+            P entity = parentChildResolver.findParentById(parentI)
+                    .orElseThrow(() -> new NotFoundException(parentI));
             parentChildResolver.setParent(entity, obj);
         } else {
-            if (!parentChildResolver.existsByParentIdAndId(parentId, chain.peek())){
+            if (!parentChildResolver.existsByParentIdAndId(parentI, chain.peek())){
                 throw new RelationshipNotFoundException();
             }
         }
@@ -33,38 +33,38 @@ public class MultiLevelCrudService<P extends WithId<ID>, E extends WithId<ID>, I
     }
 
     @Override
-    public E update(Queue<ID> chain, ID id, E obj) {
-        ID parentId = chain.remove();
+    public E update(Queue<I> chain, I i, E obj) {
+        I parentI = chain.remove();
 
-        ID childId = chain.isEmpty() ? obj.getId() : chain.peek();
-        if (!parentChildResolver.existsByParentIdAndId(parentId, childId)) {
+        I childI = chain.isEmpty() ? obj.getId() : chain.peek();
+        if (!parentChildResolver.existsByParentIdAndId(parentI, childI)) {
             throw new RelationshipNotFoundException();
         }
 
-        return delegateTo.update(chain, id, obj);
+        return delegateTo.update(chain, i, obj);
     }
 
     @Override
-    public E get(Queue<ID> chain, ID id) {
-        ID parentId = chain.remove();
-        ID childId = chain.isEmpty() ? id : chain.peek();
-        if (!parentChildResolver.existsByParentIdAndId(parentId, childId)) {
+    public E get(Queue<I> chain, I i) {
+        I parentI = chain.remove();
+        I childI = chain.isEmpty() ? i : chain.peek();
+        if (!parentChildResolver.existsByParentIdAndId(parentI, childI)) {
             throw new RelationshipNotFoundException();
         }
-        return delegateTo.get(chain, id);
+        return delegateTo.get(chain, i);
     }
 
     @Override
-    public Page<E> all(Queue<ID> chain, Pageable pageable) {
-        ID parentId = chain.remove();
+    public Page<E> all(Queue<I> chain, Pageable pageable) {
+        I parentI = chain.remove();
 
         if (chain.isEmpty()) {
-            if (!parentChildResolver.existsByParentId(parentId)) {
+            if (!parentChildResolver.existsByParentId(parentI)) {
                 throw new NotFoundException();
             }
-            return parentChildResolver.findAllByParentId(parentId, pageable);
+            return parentChildResolver.findAllByParentId(parentI, pageable);
         } else {
-            if (!parentChildResolver.existsByParentIdAndId(parentId, chain.peek())) {
+            if (!parentChildResolver.existsByParentIdAndId(parentI, chain.peek())) {
                 throw new RelationshipNotFoundException();
             }
             return delegateTo.all(chain, pageable);
@@ -72,12 +72,12 @@ public class MultiLevelCrudService<P extends WithId<ID>, E extends WithId<ID>, I
     }
 
     @Override
-    public void deleteById(Queue<ID> chain, ID id) {
-        ID parentId = chain.remove();
-        ID childId = chain.isEmpty() ? id : chain.peek();
-        if (!parentChildResolver.existsByParentIdAndId(parentId, childId)) {
+    public void deleteById(Queue<I> chain, I i) {
+        I parentI = chain.remove();
+        I childI = chain.isEmpty() ? i : chain.peek();
+        if (!parentChildResolver.existsByParentIdAndId(parentI, childI)) {
             throw new RelationshipNotFoundException();
         }
-        delegateTo.deleteById(chain, id);
+        delegateTo.deleteById(chain, i);
     }
 }

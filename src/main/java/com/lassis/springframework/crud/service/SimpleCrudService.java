@@ -17,13 +17,13 @@ import java.util.Queue;
 
 @RequiredArgsConstructor
 @Slf4j
-public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> implements CrudService<E, ID> {
-    private final PagingAndSortingRepository<E, ID> repository;
+public class SimpleCrudService<E extends WithId<I>, I extends Serializable> implements CrudService<E, I> {
+    private final PagingAndSortingRepository<E, I> repository;
     private final BeforeSave<E> beforeSaveAction;
     private final UpdateValuesSetter<E> updateSetter;
 
     @Override
-    public E create(Queue<ID> chain, E obj) {
+    public E create(Queue<I> chain, E obj) {
         failIfMultiLevel(chain);
 
         if (Objects.nonNull(obj.getId())) {
@@ -34,44 +34,44 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     }
 
     @Override
-    public E update(Queue<ID> chain, ID id, E obj) {
+    public E update(Queue<I> chain, I i, E obj) {
         failIfMultiLevel(chain);
 
-        if (Objects.nonNull(obj.getId()) && !Objects.equals(id, obj.getId())) {
-            throw new UpdateIdConflictException(id, obj.getId());
+        if (Objects.nonNull(obj.getId()) && !Objects.equals(i, obj.getId())) {
+            throw new UpdateIdConflictException(i, obj.getId());
         }
 
-        E dbObj = repository.findById(id)
-                .orElseThrow(() -> new NotFoundException(id));
+        E dbObj = repository.findById(i)
+                .orElseThrow(() -> new NotFoundException(i));
 
         updateSetter.update(dbObj, obj);
         return save(dbObj);
     }
 
     @Override
-    public E get(Queue<ID> chain, ID id) {
+    public E get(Queue<I> chain, I i) {
         failIfMultiLevel(chain);
 
-        return repository.findById(id)
-                .orElseThrow(() -> new NotFoundException(id));
+        return repository.findById(i)
+                .orElseThrow(() -> new NotFoundException(i));
     }
 
     @Override
-    public Page<E> all(Queue<ID> chain, Pageable pageable) {
+    public Page<E> all(Queue<I> chain, Pageable pageable) {
         failIfMultiLevel(chain);
 
         return repository.findAll(pageable);
     }
 
     @Override
-    public void deleteById(Queue<ID> chain, ID id) {
+    public void deleteById(Queue<I> chain, I i) {
         failIfMultiLevel(chain);
 
-        if (!repository.existsById(id)) {
-            throw new NotFoundException(id);
+        if (!repository.existsById(i)) {
+            throw new NotFoundException(i);
         }
 
-        repository.deleteById(id);
+        repository.deleteById(i);
     }
 
     private E save(E entity) {
@@ -83,7 +83,7 @@ public class SimpleCrudService<E extends WithId<ID>, ID extends Serializable> im
     }
 
 
-    private void failIfMultiLevel(Collection<ID> chain) {
+    private void failIfMultiLevel(Collection<I> chain) {
         if (!chain.isEmpty()) {
             log.error("{} can only be used with single level endpoints, define a primary CrudService to this entity", this.getClass());
             throw new IllegalStateException(this.getClass() + " can only be used with single level endpoints, define a primary CrudService to this entity");

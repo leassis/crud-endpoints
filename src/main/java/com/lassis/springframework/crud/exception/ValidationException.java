@@ -10,5 +10,5 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Getter
 public class ValidationException extends Exception {
-    private final Set<ConstraintViolation<Serializable>> errors;
+    private final transient Set<ConstraintViolation<Serializable>> errors;
 }
