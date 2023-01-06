@@ -9,7 +9,7 @@ public class Result<T, M> {
     T data;
     M meta;
 
-    public static <V> Result<V, ?> of(V data) {
+    public static <V, M> Result<V, M> of(V data) {
         return of(data, null);
     }
 }

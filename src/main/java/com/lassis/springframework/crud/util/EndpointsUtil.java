@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.lassis.springframework.crud.configuration.CRUDPathProperties;
 import com.lassis.springframework.crud.configuration.CRUDProperties;
+import com.lassis.springframework.crud.exception.ReadEndpointFileException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -37,7 +38,7 @@ public class EndpointsUtil {
             configureEndpoints(crudProperties, crudProperties.getEndpoints(), null);
             return crudProperties;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ReadEndpointFileException(e);
         }
     }
 

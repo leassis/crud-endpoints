@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MultiLevelCrudServiceTest {
+    private static final Pageable UNPAGED = Pageable.unpaged();
+
     @Mock
     CrudService<ProductDetail, Long> rootService;
 
@@ -44,7 +46,7 @@ class MultiLevelCrudServiceTest {
         Product product = new Product();
         product.setId(productId);
 
-        when(parentChildResolver.findParentById(eq(productId)))
+        when(parentChildResolver.findParentById(productId))
                 .thenReturn(Optional.of(product));
 
         ProductDetail productDetail = new ProductDetail();
@@ -60,7 +62,7 @@ class MultiLevelCrudServiceTest {
         // assert
         assertThat(chain).isEmpty();
         verify(rootService).create(any(), eq(productDetail));
-        verify(parentChildResolver).setParent(eq(product), eq(productDetail));
+        verify(parentChildResolver).setParent(product, productDetail);
     }
 
     @Test
@@ -73,7 +75,7 @@ class MultiLevelCrudServiceTest {
         productDetail.setId(Instancio.create(Long.class));
         productDetail.setProduct(product);
 
-        when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
+        when(parentChildResolver.existsByParentIdAndId(product.getId(), productDetail.getId()))
                 .thenReturn(true);
 
         LinkedList<Long> chain = new LinkedList<>();
@@ -96,7 +98,7 @@ class MultiLevelCrudServiceTest {
         ProductDetail productDetail = new ProductDetail();
         productDetail.setId(Instancio.create(Long.class));
 
-        when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
+        when(parentChildResolver.existsByParentIdAndId(product.getId(), productDetail.getId()))
                 .thenReturn(true);
 
         LinkedList<Long> chain = new LinkedList<>();
@@ -116,20 +118,18 @@ class MultiLevelCrudServiceTest {
         Product product = new Product();
         product.setId(Instancio.create(Long.class));
 
-        when(parentChildResolver.existsByParentId(eq(product.getId())))
+        when(parentChildResolver.existsByParentId(product.getId()))
                 .thenReturn(true);
 
         LinkedList<Long> chain = new LinkedList<>();
         chain.add(product.getId());
 
-        Pageable unpaged = Pageable.unpaged();
-
         // then
-        service.all(chain, unpaged);
+        service.all(chain, UNPAGED);
 
         // when
         assertThat(chain).isEmpty();
-        verify(parentChildResolver).findAllByParentId(eq(product.getId()), eq(unpaged));
+        verify(parentChildResolver).findAllByParentId(product.getId(), UNPAGED);
     }
 
     @Test
@@ -141,14 +141,14 @@ class MultiLevelCrudServiceTest {
         ProductDetail detail = newProductDetail(product);
         detail.setId(Instancio.create(Long.class));
 
-        when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(detail.getId())))
+        when(parentChildResolver.existsByParentIdAndId(product.getId(), detail.getId()))
                 .thenReturn(true);
 
         LinkedList<Long> chain = new LinkedList<>();
         chain.add(product.getId());
         chain.add(detail.getId());
 
-        Pageable unpaged = Pageable.unpaged();
+        Pageable unpaged = UNPAGED;
 
         // then
         service.all(chain, unpaged);
@@ -167,7 +167,7 @@ class MultiLevelCrudServiceTest {
         ProductDetail productDetail = new ProductDetail();
         productDetail.setId(Instancio.create(Long.class));
 
-        when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
+        when(parentChildResolver.existsByParentIdAndId(product.getId(), productDetail.getId()))
                 .thenReturn(true);
 
         LinkedList<Long> chain = new LinkedList<>();
@@ -192,11 +192,11 @@ class MultiLevelCrudServiceTest {
 
         LinkedList<Long> chain = new LinkedList<>();
 
-        when(parentChildResolver.findParentById(eq(product.getId())))
+        when(parentChildResolver.findParentById(product.getId()))
                 .thenReturn(Optional.empty());
-        when(parentChildResolver.existsByParentIdAndId(eq(product.getId()), eq(productDetail.getId())))
+        when(parentChildResolver.existsByParentIdAndId(product.getId(), productDetail.getId()))
                 .thenReturn(false);
-        when(parentChildResolver.existsByParentId(eq(product.getId())))
+        when(parentChildResolver.existsByParentId(product.getId()))
                 .thenReturn(false);
 
         //
@@ -205,19 +205,20 @@ class MultiLevelCrudServiceTest {
         assertThat(chain).isEmpty();
 
         //
+        Long productDetailId = productDetail.getId();
         chain.add(product.getId());
-        assertThatThrownBy(() -> service.update(chain, productDetail.getId(), productDetail)).isInstanceOf(RelationshipNotFoundException.class);
+        assertThatThrownBy(() -> service.update(chain, productDetailId, productDetail)).isInstanceOf(RelationshipNotFoundException.class);
 
         //
         chain.add(product.getId());
-        assertThatThrownBy(() -> service.get(chain, productDetail.getId())).isInstanceOf(RelationshipNotFoundException.class);
+        assertThatThrownBy(() -> service.get(chain, productDetailId)).isInstanceOf(RelationshipNotFoundException.class);
 
         //
         chain.add(product.getId());
-        assertThatThrownBy(() -> service.all(chain, Pageable.unpaged())).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.all(chain, UNPAGED)).isInstanceOf(NotFoundException.class);
         //
         chain.add(product.getId());
-        assertThatThrownBy(() -> service.deleteById(chain, productDetail.getId())).isInstanceOf(RelationshipNotFoundException.class);
+        assertThatThrownBy(() -> service.deleteById(chain, productDetailId)).isInstanceOf(RelationshipNotFoundException.class);
 
     }
 }

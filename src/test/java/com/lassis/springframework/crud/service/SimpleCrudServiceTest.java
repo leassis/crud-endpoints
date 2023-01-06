@@ -51,7 +51,7 @@ class SimpleCrudServiceTest {
         Product p = Instancio.create(Product.class);
         Long id = p.getId();
 
-        when(repository.findById(eq(id))).thenReturn(Optional.of(p));
+        when(repository.findById(id)).thenReturn(Optional.of(p));
 
         p = service.get(new LinkedList<>(), id);
         assertThat(p).isNotNull();
@@ -61,9 +61,9 @@ class SimpleCrudServiceTest {
     void shouldNotGetProductProductNotFound() {
         long id = Instancio.create(Long.class);
 
-        when(repository.findById(eq(id))).thenReturn(Optional.empty());
-        NotFoundException ex = catchThrowableOfType(() -> service.get(new LinkedList<>(), id),
-                NotFoundException.class);
+        when(repository.findById(id)).thenReturn(Optional.empty());
+        final LinkedList<Long> chain = new LinkedList<>();
+        NotFoundException ex = catchThrowableOfType(() -> service.get(chain, id), NotFoundException.class);
         assertThat(ex.getMessage()).contains(id + " not found");
     }
 
@@ -98,49 +98,49 @@ class SimpleCrudServiceTest {
         Product p = Instancio.create(Product.class);
         Long id = p.getId();
 
-        when(repository.findById(eq(id))).thenReturn(Optional.of(p));
-        when(repository.save(eq(p))).thenReturn(p);
+        when(repository.findById(id)).thenReturn(Optional.of(p));
+        when(repository.save(p)).thenReturn(p);
         service.update(new LinkedList<>(), id, p);
 
-        verify(updateSetter).update(eq(p), eq(p));
-        verify(beforeSave).execute(eq(p));
-        verify(repository).save(eq(p));
+        verify(updateSetter).update(p, p);
+        verify(beforeSave).execute(p);
+        verify(repository).save(p);
     }
 
     @Test
     void shouldNotUpdateProductNotFound() {
         long id = Instancio.create(Long.class);
 
-        when(repository.findById(eq(id))).thenReturn(Optional.empty());
+        when(repository.findById(id)).thenReturn(Optional.empty());
 
         Product p = new Product();
         p.setId(id);
 
-        NotFoundException ex = catchThrowableOfType(() -> service.update(new LinkedList<>(), id, p),
-                NotFoundException.class);
+        LinkedList<Long> chain = new LinkedList<>();
+        NotFoundException ex = catchThrowableOfType(() -> service.update(chain, id, p), NotFoundException.class);
 
         assertThat(ex.getMessage()).contains(id + " not found");
-        verify(repository, times(0)).save(eq(p));
+        verify(repository, times(0)).save(p);
     }
 
     @Test
     void shouldDeleteProduct() {
         long id = Instancio.create(Long.class);
 
-        when(repository.existsById(eq(id))).thenReturn(true);
+        when(repository.existsById(id)).thenReturn(true);
 
         service.deleteById(new LinkedList<>(), id);
 
-        verify(repository).deleteById(eq(id));
+        verify(repository).deleteById(id);
     }
 
     @Test
     void shouldNotDeleteProductProductNotFound() {
         long id = Instancio.create(Long.class);
-        when(repository.existsById(eq(id))).thenReturn(false);
+        when(repository.existsById(id)).thenReturn(false);
 
-        NotFoundException ex = catchThrowableOfType(() -> service.deleteById(new LinkedList<>(), id),
-                NotFoundException.class);
+        LinkedList<Long> chain = new LinkedList<>();
+        NotFoundException ex = catchThrowableOfType(() -> service.deleteById(chain, id), NotFoundException.class);
 
         assertThat(ex.getMessage()).contains(id + " not found");
     }

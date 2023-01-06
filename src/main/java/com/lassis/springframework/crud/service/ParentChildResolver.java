@@ -7,15 +7,15 @@ import org.springframework.data.domain.Pageable;
 import java.io.Serializable;
 import java.util.Optional;
 
-public interface ParentChildResolver<P extends WithId<ID>, E extends WithId<ID>, ID extends Serializable> {
+public interface ParentChildResolver<P extends WithId<I>, E extends WithId<I>, I extends Serializable> {
 
     void setParent(P parent, E child);
 
-    Optional<P> findParentById(ID parentId);
+    Optional<P> findParentById(I parentI);
 
-    Page<E> findAllByParentId(ID parentId, Pageable pageable);
+    Page<E> findAllByParentId(I parentI, Pageable pageable);
 
-    boolean existsByParentIdAndId(ID parentId, ID childId);
+    boolean existsByParentIdAndId(I parentI, I childI);
 
-    boolean existsByParentId(ID parentId);
+    boolean existsByParentId(I parentI);
 }

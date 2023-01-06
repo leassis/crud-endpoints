@@ -2,6 +2,6 @@ package com.lassis.springframework.crud.entity;
 
 import java.io.Serializable;
 
-public interface WithId<ID extends Serializable> extends Serializable {
-    ID getId();
+public interface WithId<I extends Serializable> extends Serializable {
+    I getId();
 }

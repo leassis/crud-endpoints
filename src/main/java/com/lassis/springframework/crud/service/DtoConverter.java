@@ -4,8 +4,8 @@ import com.lassis.springframework.crud.entity.WithId;
 
 import java.io.Serializable;
 
-public interface DtoConverter<DTO extends Serializable, E extends WithId<? extends Serializable>> {
-    E fromDto(DTO obj);
+public interface DtoConverter<D extends Serializable, E extends WithId<? extends Serializable>> {
+    E fromDto(D obj);
 
-    DTO toDto(E entity);
+    D toDto(E entity);
 }

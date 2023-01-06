@@ -7,14 +7,14 @@ import org.springframework.data.domain.Pageable;
 import java.io.Serializable;
 import java.util.Queue;
 
-public interface CrudService<E extends WithId<ID>, ID extends Serializable> {
-    E create(Queue<ID> chain, E obj);
+public interface CrudService<E extends WithId<I>, I extends Serializable> {
+    E create(Queue<I> chain, E obj);
 
-    E update(Queue<ID> chain, ID id, E obj);
+    E update(Queue<I> chain, I i, E obj);
 
-    E get(Queue<ID> chain, ID id);
+    E get(Queue<I> chain, I i);
 
-    Page<E> all(Queue<ID> chain, Pageable pageable);
+    Page<E> all(Queue<I> chain, Pageable pageable);
 
-    void deleteById(Queue<ID> chain, ID id);
+    void deleteById(Queue<I> chain, I i);
 }

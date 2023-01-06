@@ -31,6 +31,8 @@ import static org.springframework.core.ResolvableType.forClassWithGenerics;
 @RequiredArgsConstructor
 class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
 
+    private static final String MSG_LOG_FOUND = "{} of type {} found";
+
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry bdr) {
         CRUDProperties config = EndpointsUtil.getConfig();
@@ -68,13 +70,13 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                         ObjectProvider<UpdateValuesSetter<WithId<Serializable>>> updateSetterProvider = bf.getBeanProvider(updateSetterType);
 
                         PagingAndSortingRepository<WithId<Serializable>, Serializable> repository = repositoryProvider.getObject();
-                        log.debug("{} of type {} found", repository, repositoryType);
+                        log.debug(MSG_LOG_FOUND, repository, repositoryType);
 
                         BeforeSave<WithId<Serializable>> beforeSave = beforeSaveProvider.getIfAvailable(BeforeSave::none);
-                        log.debug("{} of type {} found", beforeSave, beforeSaveType);
+                        log.debug(MSG_LOG_FOUND, beforeSave, beforeSaveType);
 
                         UpdateValuesSetter<WithId<Serializable>> updateSetter = updateSetterProvider.getIfAvailable(GenericUpdateValuesSetter::new);
-                        log.debug("{} of type {} found", updateSetter, updateSetterType);
+                        log.debug(MSG_LOG_FOUND, updateSetter, updateSetterType);
 
                         CrudService<WithId<Serializable>, Serializable> rootService = new SimpleCrudService<>(
                                 repository,
