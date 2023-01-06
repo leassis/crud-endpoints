@@ -83,7 +83,7 @@ class CRUDAPIConfiguration {
 
         for (CRUDPathProperties endpoint : config.getEndpoints()) {
             String path = config.getBasePath() + endpoint.getPath();
-            route = createRoute(context, route, config, endpoint, path, 0);
+            route = createRoute(context, route, endpoint, path, 0);
         }
 
         return route.build();
@@ -91,7 +91,6 @@ class CRUDAPIConfiguration {
 
     private RouterFunctions.Builder createRoute(ApplicationContext context,
                                                 RouterFunctions.Builder route,
-                                                CRUDProperties config,
                                                 CRUDPathProperties endpoint,
                                                 String path,
                                                 Integer level) {
@@ -128,7 +127,7 @@ class CRUDAPIConfiguration {
         for (CRUDPathProperties sub : endpoint.getEndpoints()) {
             String subPath = path + pathVar + sub.getPath();
 
-            route = createRoute(context, route, config, sub, subPath, level + 1);
+            route = createRoute(context, route, sub, subPath, level + 1);
         }
 
         return route;

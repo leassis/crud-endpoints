@@ -3,8 +3,9 @@ package com.lassis.springframework.crud.configuration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.pojo.DtoType;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.http.HttpMethod;
 
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-@Data
+@Getter
 public class CRUDPathProperties {
     String path;
 
@@ -31,11 +32,13 @@ public class CRUDPathProperties {
     @JsonProperty("page-size")
     int pageSize;
 
+    @Setter
     CRUDPathProperties parent;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @JsonProperty("endpoints")
+    @Setter
     Set<CRUDPathProperties> endpoints;
 
     public final Class<? extends Serializable> getDtoClass() {
