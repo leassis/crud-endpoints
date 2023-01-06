@@ -1,0 +1,13 @@
+base-path: '/api'
+id-class: java.lang.Long
+page-size: 25
+methods:
+  - get
+  - post
+  - delete
+endpoints:
+  - path: '/products'
+    entity-class: com.lassis.springframework.crud.fake.Clz1
+    endpoints:
+      - path: '/details'
+        entity-class: com.lassis.springframework.crud.fake.Clz2

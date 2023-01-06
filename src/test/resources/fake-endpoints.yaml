@@ -1,5 +1,6 @@
 base-path: '/api'
 id-class: java.lang.Long
+page-size: 25
 endpoints:
   - path: '/products'
     entity-class: com.lassis.springframework.crud.fake.Clz1
