@@ -1,5 +1,5 @@
 package com.lassis.springframework.crud.pojo;
 
 public enum DtoType {
-    GET, POST, PUT, LIST
+    GET, POST, PUT, LIST, RESULT
 }

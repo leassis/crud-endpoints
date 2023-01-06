@@ -10,6 +10,7 @@ endpoints:
       post: com.lassis.springframework.crud.fake.Clz2_2
       put: com.lassis.springframework.crud.fake.Clz2
       list: com.lassis.springframework.crud.fake.Clz2
+      result: com.lassis.springframework.crud.fake.Clz2
     page-size: 25
     methods:
       - get
