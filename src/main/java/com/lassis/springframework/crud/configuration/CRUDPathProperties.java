@@ -3,10 +3,13 @@ package com.lassis.springframework.crud.configuration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.pojo.DtoType;
+import lombok.AccessLevel;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpMethod;
 
 import java.io.Serializable;
@@ -14,7 +17,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-@Getter
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class CRUDPathProperties {
     String path;
 
@@ -24,13 +28,15 @@ public class CRUDPathProperties {
     Class<? extends WithId<? extends Serializable>> entityClass;
 
     @JsonProperty("dto-class")
+    @Getter(AccessLevel.PRIVATE)
     Class<? extends Serializable> dtoClass;
 
     @JsonProperty("dto-classes")
+    @Getter(AccessLevel.PRIVATE)
     Map<DtoType, Class<? extends Serializable>> dtoClasses;
 
     @JsonProperty("page-size")
-    int pageSize;
+    Integer pageSize;
 
     @Setter
     CRUDPathProperties parent;
@@ -41,14 +47,14 @@ public class CRUDPathProperties {
     @Setter
     Set<CRUDPathProperties> endpoints;
 
-    public final Class<? extends Serializable> getDtoClass() {
+    private Class<? extends Serializable> getDtoClass() {
         return Objects.nonNull(dtoClass) ? dtoClass : entityClass;
     }
 
     public final Class<? extends Serializable> getDtoClass(DtoType dtoType) {
-
         return Objects.nonNull(dtoClasses)
                 ? dtoClasses.getOrDefault(dtoType, getDtoClass())
                 : getDtoClass();
     }
+
 }
