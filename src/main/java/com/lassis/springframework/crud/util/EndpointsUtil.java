@@ -18,12 +18,23 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.collectingAndThen;
+import static org.springframework.http.HttpMethod.DELETE;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 
 @UtilityClass
 @Slf4j
 public class EndpointsUtil {
+
+    private static final Set<HttpMethod> ALLOWED_HTTP_METHODS = Stream.of(GET, POST, PUT, DELETE)
+            .collect(collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
     @NonNull
     public CRUDProperties getConfig(@NonNull Resource resource) {
@@ -70,9 +81,15 @@ public class EndpointsUtil {
 
     private void useDefaultMethodsIfNeeded(CRUDProperties config, CRUDPathProperties endpoint) {
         Set<HttpMethod> methods = endpoint.getMethods();
-        if (isNull(methods) || methods.isEmpty()) {
-            endpoint.setMethods(config.getMethods());
+        if (nonNull(methods) && !methods.isEmpty()) {
+            return;
         }
+
+        methods = config.getMethods();
+        if (isNull(methods) || methods.isEmpty()) {
+            methods = ALLOWED_HTTP_METHODS;
+        }
+        endpoint.setMethods(methods);
     }
 
     private void nonNullEndpointsCollection(CRUDPathProperties endpoint) {
