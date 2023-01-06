@@ -4,10 +4,13 @@ import com.lassis.springframework.crud.configuration.CRUDPathProperties;
 import com.lassis.springframework.crud.configuration.CRUDProperties;
 import com.lassis.springframework.crud.fake.Clz1;
 import com.lassis.springframework.crud.fake.Clz2;
+import com.lassis.springframework.crud.fake.Clz2_1;
+import com.lassis.springframework.crud.fake.Clz2_2;
 import com.lassis.springframework.crud.fake.Clz3;
 import com.lassis.springframework.crud.fake.Clz4;
 import com.lassis.springframework.crud.fake.Clz5;
 import com.lassis.springframework.crud.fake.Clz6;
+import com.lassis.springframework.crud.pojo.DtoType;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -35,9 +38,13 @@ class EndpointsUtilTest {
         assertThat(endpoint.getPath()).isEqualTo("/products");
         assertThat(endpoint.getEntityClass()).isEqualTo(Clz1.class);
         assertThat(endpoint.getDtoClass()).isEqualTo(Clz2.class);
-        // assertThat(endpoint.getIdClass()).isEqualTo(Long.class);
         assertThat(endpoint.getPageSize()).isEqualTo(25);
         assertThat(endpoint.getMethods()).containsExactlyInAnyOrder(DELETE, GET, PUT, POST);
+        assertThat(endpoint.getDtoClasses().keySet()).containsExactlyInAnyOrder(DtoType.GET, DtoType.POST, DtoType.PUT, DtoType.LIST);
+        assertThat(endpoint.getDtoClasses().get(DtoType.GET)).isEqualTo(Clz2_1.class);
+        assertThat(endpoint.getDtoClasses().get(DtoType.POST)).isEqualTo(Clz2_2.class);
+        assertThat(endpoint.getDtoClasses().get(DtoType.PUT)).isEqualTo(Clz2.class);
+        assertThat(endpoint.getDtoClasses().get(DtoType.LIST)).isEqualTo(Clz2.class);
 
         ArrayList<CRUDPathProperties> subPaths = new ArrayList<>(endpoint.getEndpoints());
         subPaths.sort(Comparator.comparing(CRUDPathProperties::getPath));
@@ -49,7 +56,6 @@ class EndpointsUtilTest {
         assertThat(sub.getPath()).isEqualTo("/asub");
         assertThat(sub.getEntityClass()).isEqualTo(Clz5.class);
         assertThat(sub.getDtoClass()).isEqualTo(Clz5.class);
-        // assertThat(sub.getIdClass()).isEqualTo(Long.class);
         assertThat(sub.getPageSize()).isEqualTo(5);
         assertThat(sub.getMethods()).containsExactlyInAnyOrder(GET);
 
@@ -59,7 +65,7 @@ class EndpointsUtilTest {
         assertThat(subSub.getPath()).isEqualTo("/asub-sub");
         assertThat(subSub.getEntityClass()).isEqualTo(Clz6.class);
         assertThat(subSub.getDtoClass()).isEqualTo(Clz6.class);
-        // assertThat(subSub.getIdClass()).isEqualTo(Long.class);
+        assertThat(subSub.getDtoClass(DtoType.POST)).isEqualTo(Clz6.class);
         assertThat(subSub.getPageSize()).isEqualTo(5);
         assertThat(subSub.getMethods()).containsExactlyInAnyOrder(POST);
 
@@ -68,7 +74,6 @@ class EndpointsUtilTest {
         assertThat(sub.getPath()).isEqualTo("/details");
         assertThat(sub.getEntityClass()).isEqualTo(Clz3.class);
         assertThat(sub.getDtoClass()).isEqualTo(Clz4.class);
-        // assertThat(sub.getIdClass()).isEqualTo(Long.class);
         assertThat(sub.getPageSize()).isEqualTo(10);
         assertThat(sub.getMethods()).containsExactlyInAnyOrder(GET);
 

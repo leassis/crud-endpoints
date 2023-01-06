@@ -4,6 +4,7 @@ import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.exception.ValidationException;
 import com.lassis.springframework.crud.pojo.BodyValidation;
 import com.lassis.springframework.crud.pojo.BodyValidation.BodyContent;
+import com.lassis.springframework.crud.pojo.DtoType;
 import com.lassis.springframework.crud.pojo.Pagination;
 import com.lassis.springframework.crud.pojo.Result;
 import com.lassis.springframework.crud.service.CrudService;
@@ -50,6 +51,8 @@ import static org.springframework.web.servlet.function.RouterFunctions.route;
 class CRUDAPIConfiguration {
     private static final Pattern PAGE_PATTERN = Pattern.compile("^[PF]\\d+S\\d+$");
     private static final DtoConverter<Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
+    private final ApplicationContext context;
+    private final CRUDProperties config;
 
     @Bean
     IdMapper<Long> longIdMapper() {
@@ -75,12 +78,12 @@ class CRUDAPIConfiguration {
     }
 
     @Bean
-    RouterFunction<ServerResponse> crudRouterFunction(ApplicationContext context, CRUDProperties config) {
+    RouterFunction<ServerResponse> crudRouterFunction() {
         RouterFunctions.Builder route = route();
 
         for (CRUDPathProperties endpoint : config.getEndpoints()) {
             String path = config.getBasePath() + endpoint.getPath();
-            route = createRoute(context, route, endpoint, path, 0);
+            route = createRoute(context, route, config, endpoint, path, 0);
         }
 
         return route.build();
@@ -88,6 +91,7 @@ class CRUDAPIConfiguration {
 
     private RouterFunctions.Builder createRoute(ApplicationContext context,
                                                 RouterFunctions.Builder route,
+                                                CRUDProperties config,
                                                 CRUDPathProperties endpoint,
                                                 String path,
                                                 Integer level) {
@@ -96,25 +100,23 @@ class CRUDAPIConfiguration {
         final String pathVar = "/{" + pathVarName + "}";
 
         final Class<? extends WithId<? extends Serializable>> entityClass = endpoint.getEntityClass();
-        final Class<? extends Serializable> dtoClass = endpoint.getDtoClass();
-        final Class<? extends Serializable> idClass = endpoint.getIdClass();
+        final Class<? extends Serializable> idClass = config.getIdClass();
 
         final CrudService<WithId<Serializable>, Serializable> service = resolve(forClassWithGenerics(CrudService.class, entityClass, idClass), context);
         final IdMapper<Serializable> idMapper = resolve(forClassWithGenerics(IdMapper.class, idClass), context);
-        final DtoConverter<Serializable, WithId<Serializable>> dtoConverter = resolve(forClassWithGenerics(DtoConverter.class, dtoClass, entityClass), context, () -> BYPASS_DTO_CONVERTER);
 
         route = route.nest(path(path), builder -> {
             if (endpoint.getMethods().contains(HttpMethod.GET)) {
-                builder.GET("", req -> retrieve(req, service, dtoConverter, idMapper, endpoint, level))
-                        .GET(pathVar, req -> retrieveById(req, service, dtoConverter, idMapper, level));
+                builder.GET("", req -> retrieve(req, service, idMapper, endpoint, level))
+                        .GET(pathVar, req -> retrieveById(req, service, endpoint, idMapper, level));
             }
 
             if (endpoint.getMethods().contains(HttpMethod.POST)) {
-                builder.POST("", req -> create(req, service, dtoConverter, dtoClass, idMapper, level));
+                builder.POST("", req -> create(req, service, endpoint, idMapper, level));
             }
 
             if (endpoint.getMethods().contains(HttpMethod.PUT)) {
-                builder.PUT(pathVar, req -> update(req, service, dtoClass, dtoConverter, idMapper, level));
+                builder.PUT(pathVar, req -> update(req, service, endpoint, idMapper, level));
             }
 
             if (endpoint.getMethods().contains(HttpMethod.DELETE)) {
@@ -126,7 +128,7 @@ class CRUDAPIConfiguration {
         for (CRUDPathProperties sub : endpoint.getEndpoints()) {
             String subPath = path + pathVar + sub.getPath();
 
-            route = createRoute(context, route, sub, subPath, level + 1);
+            route = createRoute(context, route, config, sub, subPath, level + 1);
         }
 
         return route;
@@ -135,8 +137,7 @@ class CRUDAPIConfiguration {
 
     private ServerResponse create(ServerRequest req,
                                   CrudService<WithId<Serializable>, Serializable> service,
-                                  DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
-                                  Class<? extends Serializable> dtoClass,
+                                  CRUDPathProperties endpoint,
                                   IdMapper<Serializable> idMapper,
                                   int level)
             throws javax.servlet.ServletException, java.io.IOException {
@@ -144,9 +145,12 @@ class CRUDAPIConfiguration {
         Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         try {
-            WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
+            DtoConverter<Serializable, WithId<Serializable>> dtoConverter = getDtoConverter(endpoint, DtoType.POST);
+            WithId<Serializable> body = getBody(dtoConverter, endpoint.getDtoClass(DtoType.POST), req);
             WithId<Serializable> created = service.create(idChain, body);
+
             Serializable data = dtoConverter.toDto(created);
+
             return ServerResponse.created(req.uri().resolve("/" + created.getId())).body(Result.of(data));
         } catch (ValidationException e) {
             return processValidationException(e);
@@ -156,16 +160,15 @@ class CRUDAPIConfiguration {
 
     private ServerResponse retrieve(ServerRequest req,
                                     CrudService<WithId<Serializable>, Serializable> service,
-                                    DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
                                     IdMapper<Serializable> idMapper,
-                                    CRUDPathProperties crudPathProperties,
+                                    CRUDPathProperties endpoint,
                                     int level) {
 
         Queue<Serializable> idChain = toIdChain(idMapper, req, level);
+        Pageable pageable = getPageable(req, endpoint.getPageSize());
 
-        Pageable pageable = getPageable(req, crudPathProperties.getPageSize());
         Page<Serializable> pageContent = service.all(idChain, pageable)
-                .map(dtoConverter::toDto);
+                .map(getDtoConverter(endpoint, DtoType.LIST)::toDto);
 
         return ServerResponse.ok().body(Result.of(pageContent.getContent(), toPagination(pageContent)));
     }
@@ -173,7 +176,7 @@ class CRUDAPIConfiguration {
 
     private ServerResponse retrieveById(ServerRequest req,
                                         CrudService<WithId<Serializable>, Serializable> service,
-                                        DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
+                                        CRUDPathProperties endpoint,
                                         IdMapper<Serializable> idMapper,
                                         int level) {
 
@@ -181,15 +184,13 @@ class CRUDAPIConfiguration {
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
-        Serializable data = dtoConverter.toDto(service.get(idChain, id));
+        Serializable data = getDtoConverter(endpoint, DtoType.GET).toDto(service.get(idChain, id));
         return ServerResponse.ok().body(Result.of(data));
     }
 
     private ServerResponse update(ServerRequest req,
                                   CrudService<WithId<Serializable>, Serializable> service,
-                                  Class<? extends Serializable> dtoClass,
-                                  DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
-                                  IdMapper<Serializable> idMapper,
+                                  CRUDPathProperties endpoint, IdMapper<Serializable> idMapper,
                                   int level)
             throws javax.servlet.ServletException, java.io.IOException {
 
@@ -198,9 +199,11 @@ class CRUDAPIConfiguration {
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
         try {
-            WithId<Serializable> body = getBody(dtoConverter, dtoClass, req);
+            DtoConverter<Serializable, WithId<Serializable>> dtoConverter = getDtoConverter(endpoint, DtoType.PUT);
+            WithId<Serializable> body = getBody(dtoConverter, endpoint.getDtoClass(DtoType.PUT), req);
 
             Serializable data = dtoConverter.toDto(service.update(idChain, id, body));
+
             return ServerResponse.ok().body(Result.of(data));
         } catch (ValidationException e) {
             return processValidationException(e);
@@ -295,6 +298,12 @@ class CRUDAPIConfiguration {
     private <R> R resolve(ResolvableType type, ApplicationContext context, Supplier<R> defaultBean) {
         ObjectProvider<R> beanProvider = context.getBeanProvider(type);
         return beanProvider.getIfAvailable(defaultBean);
+    }
+
+    private DtoConverter<Serializable, WithId<Serializable>> getDtoConverter(CRUDPathProperties endpoint, DtoType dtoType) {
+        final Class<? extends Serializable> dtoClass = endpoint.getDtoClass(dtoType);
+        final Class<? extends WithId<? extends Serializable>> entityClass = endpoint.getEntityClass();
+        return resolve(forClassWithGenerics(DtoConverter.class, dtoClass, entityClass), context, () -> BYPASS_DTO_CONVERTER);
     }
 
     private static DtoConverter<Serializable, WithId<Serializable>> bypassDtoConverter() {
