@@ -50,7 +50,7 @@ import static org.springframework.web.servlet.function.RouterFunctions.route;
 @RequiredArgsConstructor
 class CRUDAPIConfiguration {
     private static final Pattern PAGE_PATTERN = Pattern.compile("^[PF]\\d+S\\d+$");
-    private static final DtoConverter<Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
+    private static final DtoConverter<Serializable, Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
     private final ApplicationContext context;
     private final CRUDProperties config;
 
@@ -144,7 +144,7 @@ class CRUDAPIConfiguration {
         Queue<Serializable> idChain = toIdChain(idMapper, req, level);
 
         try {
-            DtoConverter<Serializable, WithId<Serializable>> dtoConverter = getDtoConverter(endpoint, DtoType.POST);
+            DtoConverter<Serializable, Serializable, WithId<Serializable>> dtoConverter = getDtoConverter(endpoint, DtoType.POST, DtoType.RESULT);
             WithId<Serializable> body = getBody(dtoConverter, endpoint.getDtoClass(DtoType.POST), req);
             WithId<Serializable> created = service.create(idChain, body);
 
@@ -167,7 +167,7 @@ class CRUDAPIConfiguration {
         Pageable pageable = getPageable(req, endpoint.getPageSize());
 
         Page<Serializable> pageContent = service.all(idChain, pageable)
-                .map(getDtoConverter(endpoint, DtoType.LIST)::toDto);
+                .map(getDtoConverter(endpoint, DtoType.LIST, DtoType.LIST)::toDto);
 
         return ServerResponse.ok().body(Result.of(pageContent.getContent(), toPagination(pageContent)));
     }
@@ -183,7 +183,7 @@ class CRUDAPIConfiguration {
 
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
-        Serializable data = getDtoConverter(endpoint, DtoType.GET).toDto(service.get(idChain, id));
+        Serializable data = getDtoConverter(endpoint, DtoType.GET, DtoType.GET).toDto(service.get(idChain, id));
         return ServerResponse.ok().body(Result.of(data));
     }
 
@@ -198,7 +198,7 @@ class CRUDAPIConfiguration {
         Serializable id = idMapper.apply(req.pathVariable("id" + level));
 
         try {
-            DtoConverter<Serializable, WithId<Serializable>> dtoConverter = getDtoConverter(endpoint, DtoType.PUT);
+            DtoConverter<Serializable, Serializable, WithId<Serializable>> dtoConverter = getDtoConverter(endpoint, DtoType.PUT, DtoType.RESULT);
             WithId<Serializable> body = getBody(dtoConverter, endpoint.getDtoClass(DtoType.PUT), req);
 
             Serializable data = dtoConverter.toDto(service.update(idChain, id, body));
@@ -275,7 +275,7 @@ class CRUDAPIConfiguration {
     }
 
 
-    private WithId<Serializable> getBody(DtoConverter<Serializable, WithId<Serializable>> dtoConverter,
+    private WithId<Serializable> getBody(DtoConverter<Serializable, Serializable, WithId<Serializable>> dtoConverter,
                                          Class<? extends Serializable> clazz, ServerRequest req)
             throws javax.servlet.ServletException, java.io.IOException, ValidationException {
 
@@ -299,14 +299,18 @@ class CRUDAPIConfiguration {
         return beanProvider.getIfAvailable(defaultBean);
     }
 
-    private DtoConverter<Serializable, WithId<Serializable>> getDtoConverter(CRUDPathProperties endpoint, DtoType dtoType) {
-        final Class<? extends Serializable> dtoClass = endpoint.getDtoClass(dtoType);
+    private DtoConverter<Serializable, Serializable, WithId<Serializable>> getDtoConverter(CRUDPathProperties endpoint,
+                                                                                           DtoType inputDtoType,
+                                                                                           DtoType outputDtoType) {
+
+        final Class<? extends Serializable> inputDtoClass = endpoint.getDtoClass(inputDtoType);
+        final Class<? extends Serializable> outputDtoClass = endpoint.getDtoClass(outputDtoType);
         final Class<? extends WithId<? extends Serializable>> entityClass = endpoint.getEntityClass();
-        return resolve(forClassWithGenerics(DtoConverter.class, dtoClass, entityClass), context, () -> BYPASS_DTO_CONVERTER);
+        return resolve(forClassWithGenerics(DtoConverter.class, inputDtoClass, outputDtoClass, entityClass), context, () -> BYPASS_DTO_CONVERTER);
     }
 
-    private static DtoConverter<Serializable, WithId<Serializable>> bypassDtoConverter() {
-        return new DtoConverter<Serializable, WithId<Serializable>>() {
+    private static DtoConverter<Serializable, Serializable, WithId<Serializable>> bypassDtoConverter() {
+        return new DtoConverter<Serializable, Serializable, WithId<Serializable>>() {
             @Override
             public WithId<Serializable> fromDto(Serializable obj) {
                 return (WithId<Serializable>) obj;

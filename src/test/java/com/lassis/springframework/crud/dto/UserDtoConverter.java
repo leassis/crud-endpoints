@@ -5,7 +5,7 @@ import com.lassis.springframework.crud.service.User;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserDtoConverter implements DtoConverter<UserDto, User> {
+public class UserDtoConverter implements DtoConverter<UserDto, UserDto, User> {
     @Override
     public User fromDto(UserDto obj) {
         User entity = new User();
