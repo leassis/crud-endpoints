@@ -39,18 +39,18 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                 rootBeanDefinition(CRUDProperties.class, () -> config).getBeanDefinition()
         );
 
-        config.getEndpoints().forEach(e -> registryCrudService(bdr, e, ""));
+        config.getEndpoints().forEach(e -> registryCrudService(bdr, config, e, ""));
     }
 
 
-    private void registryCrudService(BeanDefinitionRegistry bdr, CRUDPathProperties endpoint, String prefixName) {
+    private void registryCrudService(BeanDefinitionRegistry bdr, CRUDProperties config, CRUDPathProperties endpoint, String prefixName) {
         final String beanName = createCrudServiceBeanName(endpoint, prefixName);
 
         if (!bdr.containsBeanDefinition(beanName)) {
 
             final BeanFactory bf = (BeanFactory) bdr;
             final Class<? extends WithId<? extends Serializable>> clazz = endpoint.getEntityClass();
-            final Class<? extends Serializable> idClass = endpoint.getIdClass();
+            final Class<? extends Serializable> idClass = config.getIdClass();
 
             final ResolvableType crudServiceType = forClassWithGenerics(CrudService.class, clazz, idClass);
 
@@ -85,15 +85,15 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
                         log.info("bean {} of type {} has been created and it is now available in the context, " +
                                 "if you like to override this bean create a bean with name {}", beanName, crudServiceType, beanName);
 
-                        return createExecutorChain(endpoint, bf, rootService);
+                        return createExecutorChain(config, endpoint, bf, rootService);
                     }).getBeanDefinition()
             );
         }
 
-        endpoint.getSubPaths().forEach(sub -> registryCrudService(bdr, sub, prefixName + endpoint.getPath()));
+        endpoint.getEndpoints().forEach(sub -> registryCrudService(bdr, config, sub, prefixName + endpoint.getPath()));
     }
 
-    private static CrudService<WithId<Serializable>, Serializable> createExecutorChain(CRUDPathProperties endpoint, BeanFactory bf, CrudService<WithId<Serializable>, Serializable> rootService) {
+    private static CrudService<WithId<Serializable>, Serializable> createExecutorChain(CRUDProperties config, CRUDPathProperties endpoint, BeanFactory bf, CrudService<WithId<Serializable>, Serializable> rootService) {
         final CRUDPathProperties parent = endpoint.getParent();
         if (Objects.isNull(parent)) {
             return rootService;
@@ -101,14 +101,14 @@ class CRUDServiceImportBeanDefinitionRegistrar implements ImportBeanDefinitionRe
 
         final Class<? extends WithId<? extends Serializable>> parentClazz = parent.getEntityClass();
         final Class<? extends WithId<? extends Serializable>> clazz = endpoint.getEntityClass();
-        final Class<? extends Serializable> idClass = endpoint.getIdClass();
+        final Class<? extends Serializable> idClass = config.getIdClass();
 
         ResolvableType subRepoType = forClassWithGenerics(ParentChildResolver.class, parentClazz, clazz, idClass);
         ObjectProvider<ParentChildResolver<WithId<Serializable>, WithId<Serializable>, Serializable>> subRepoProvider = bf.getBeanProvider(subRepoType);
         ParentChildResolver<WithId<Serializable>, WithId<Serializable>, Serializable> subRepo = subRepoProvider.getObject();
 
         CrudService<WithId<Serializable>, Serializable> multiLevelService = new MultiLevelCrudService<>(rootService, subRepo);
-        return createExecutorChain(endpoint.getParent(), bf, multiLevelService);
+        return createExecutorChain(config, endpoint.getParent(), bf, multiLevelService);
     }
 
     private String createCrudServiceBeanName(CRUDPathProperties endpoint, String prefixName) {

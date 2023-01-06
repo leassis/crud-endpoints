@@ -1,33 +1,35 @@
-crud:
-  base-path: '/api'
-  id-class: java.lang.Long
-  endpoints:
-    - path: '/products'
-      entity-class: com.lassis.springframework.crud.fake.Clz1
-      dto-class: com.lassis.springframework.crud.fake.Clz2
-      page-size: 25
-      methods:
-        - get
-        - post
-        - put
-        - delete
-      sub:
-        - path: '/details'
-          entity-class: com.lassis.springframework.crud.fake.Clz3
-          dto-class: com.lassis.springframework.crud.fake.Clz4
-          page-size: 10
-          methods:
-            - get
-        - path: '/asub'
-          entity-class: com.lassis.springframework.crud.fake.Clz5
-          dto-class: com.lassis.springframework.crud.fake.Clz5
-          page-size: 5
-          methods:
-            - get
-          sub:
-            - path: '/asub-sub'
-              entity-class: com.lassis.springframework.crud.fake.Clz6
-              dto-class: com.lassis.springframework.crud.fake.Clz6
-              page-size: 5
-              methods:
-                - POST
+base-path: '/api'
+id-class: java.lang.Long
+endpoints:
+  - path: '/products'
+    entity-class: com.lassis.springframework.crud.fake.Clz1
+    dto-class: com.lassis.springframework.crud.fake.Clz2
+    dto-classes:
+      get: com.lassis.springframework.crud.fake.Clz2_1
+      post: com.lassis.springframework.crud.fake.Clz2_2
+      put: com.lassis.springframework.crud.fake.Clz2
+      list: com.lassis.springframework.crud.fake.Clz2
+    page-size: 25
+    methods:
+      - get
+      - post
+      - put
+      - delete
+    endpoints:
+      - path: '/details'
+        entity-class: com.lassis.springframework.crud.fake.Clz3
+        dto-class: com.lassis.springframework.crud.fake.Clz4
+        page-size: 10
+        methods:
+          - get
+      - path: '/asub'
+        entity-class: com.lassis.springframework.crud.fake.Clz5
+        page-size: 5
+        methods:
+          - get
+        endpoints:
+          - path: '/asub-sub'
+            entity-class: com.lassis.springframework.crud.fake.Clz6
+            page-size: 5
+            methods:
+              - POST
