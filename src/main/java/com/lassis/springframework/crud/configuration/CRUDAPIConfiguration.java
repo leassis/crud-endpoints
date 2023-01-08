@@ -1,11 +1,12 @@
 package com.lassis.springframework.crud.configuration;
 
+import com.lassis.springframework.crud.api.PaginationConverter;
+import com.lassis.springframework.crud.api.SimplePaginationConverter;
 import com.lassis.springframework.crud.entity.WithId;
 import com.lassis.springframework.crud.exception.ValidationException;
 import com.lassis.springframework.crud.pojo.BodyValidation;
 import com.lassis.springframework.crud.pojo.BodyValidation.BodyContent;
 import com.lassis.springframework.crud.pojo.DtoType;
-import com.lassis.springframework.crud.pojo.Pagination;
 import com.lassis.springframework.crud.pojo.Result;
 import com.lassis.springframework.crud.service.CrudService;
 import com.lassis.springframework.crud.service.DtoConverter;
@@ -17,9 +18,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
@@ -32,12 +31,10 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import java.io.Serializable;
 import java.util.LinkedList;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,7 +46,7 @@ import static org.springframework.web.servlet.function.RouterFunctions.route;
 @Slf4j
 @RequiredArgsConstructor
 class CRUDAPIConfiguration {
-    private static final Pattern PAGE_PATTERN = Pattern.compile("^[PF]\\d+S\\d+$");
+
     private static final DtoConverter<Serializable, Serializable, WithId<Serializable>> BYPASS_DTO_CONVERTER = bypassDtoConverter();
     private final ApplicationContext context;
     private final CRUDProperties config;
@@ -78,12 +75,18 @@ class CRUDAPIConfiguration {
     }
 
     @Bean
-    RouterFunction<ServerResponse> crudRouterFunction() {
+    @ConditionalOnMissingBean(PaginationConverter.class)
+    PaginationConverter paginationConverter() {
+        return new SimplePaginationConverter();
+    }
+
+    @Bean
+    RouterFunction<ServerResponse> crudRouterFunction(PaginationConverter paginationManager) {
         RouterFunctions.Builder route = route();
 
         for (CRUDPathProperties endpoint : config.getEndpoints()) {
             String path = config.getBasePath() + endpoint.getPath();
-            route = createRoute(context, route, endpoint, path, 0);
+            route = createRoute(context, route, endpoint, paginationManager, path, 0);
         }
 
         return route.build();
@@ -92,8 +95,9 @@ class CRUDAPIConfiguration {
     private RouterFunctions.Builder createRoute(ApplicationContext context,
                                                 RouterFunctions.Builder route,
                                                 CRUDPathProperties endpoint,
+                                                PaginationConverter paginationManager,
                                                 String path,
-                                                Integer level) {
+                                                int level) {
 
         final String pathVarName = "id" + level;
         final String pathVar = "/{" + pathVarName + "}";
@@ -106,7 +110,7 @@ class CRUDAPIConfiguration {
 
         route = route.nest(path(path), builder -> {
             if (endpoint.getMethods().contains(HttpMethod.GET)) {
-                builder.GET("", req -> retrieve(req, service, idMapper, endpoint, level))
+                builder.GET("", req -> retrieve(req, service, idMapper, endpoint, paginationManager, level))
                         .GET(pathVar, req -> retrieveById(req, service, endpoint, idMapper, level));
             }
 
@@ -127,7 +131,7 @@ class CRUDAPIConfiguration {
         for (CRUDPathProperties sub : endpoint.getEndpoints()) {
             String subPath = path + pathVar + sub.getPath();
 
-            route = createRoute(context, route, sub, subPath, level + 1);
+            route = createRoute(context, route, sub, paginationManager, subPath, level + 1);
         }
 
         return route;
@@ -161,15 +165,16 @@ class CRUDAPIConfiguration {
                                     CrudService<WithId<Serializable>, Serializable> service,
                                     IdMapper<Serializable> idMapper,
                                     CRUDPathProperties endpoint,
+                                    PaginationConverter paginationManager,
                                     int level) {
 
         Queue<Serializable> idChain = toIdChain(idMapper, req, level);
-        Pageable pageable = getPageable(req, endpoint.getPageSize());
+        Pageable pageable = paginationManager.getPageable(req, endpoint.getPageSize());
 
         Page<Serializable> pageContent = service.all(idChain, pageable)
                 .map(getDtoConverter(endpoint, DtoType.LIST, DtoType.LIST)::toDto);
 
-        return ServerResponse.ok().body(Result.of(pageContent.getContent(), toPagination(pageContent)));
+        return ServerResponse.ok().body(Result.of(pageContent.getContent(), paginationManager.toPagination(pageContent)));
     }
 
 
@@ -237,41 +242,6 @@ class CRUDAPIConfiguration {
                 .map(req::pathVariable)
                 .map(idMapper)
                 .collect(Collectors.toCollection(LinkedList::new));
-    }
-
-    private Pagination toPagination(Page<Serializable> pageContent) {
-        Pageable pageable = pageContent.getPageable();
-        Pageable first = pageable.first();
-        String tFirst = "F" + first.getPageNumber() + "S" + first.getPageSize();
-
-        String tPrev = null;
-        if (pageContent.hasPrevious()) {
-            Pageable prev = pageable.previousOrFirst();
-
-            tPrev = prev.getPageNumber() == first.getPageNumber()
-                    ? tFirst
-                    : "P" + prev.getPageNumber() + "S" + prev.getPageSize();
-        }
-
-        String tNext = null;
-        if (pageContent.hasNext()) {
-            Pageable next = pageable.next();
-            tNext = "P" + next.getPageNumber() + "S" + next.getPageSize();
-        }
-        return Pagination.of(tFirst, tPrev, tNext);
-    }
-
-    private Pageable getPageable(ServerRequest req, int size) {
-        String page = req.param("page").orElseGet(() -> req.headers().firstHeader("page"));
-        if (Objects.isNull(page) || !PAGE_PATTERN.matcher(page).matches()) {
-            Integer pageSize = req.param("size").map(Integer::parseInt).orElse(size);
-            return PageRequest.of(0, pageSize, Sort.by("id"));
-        }
-
-        int indexOfS = page.indexOf("S");
-        int pageNumber = Integer.parseInt(page.substring(1, indexOfS));
-        int pageSize = Integer.parseInt(page.substring(indexOfS + 1));
-        return PageRequest.of(pageNumber, pageSize, Sort.by("id"));
     }
 
 
