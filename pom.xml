@@ -25,7 +25,7 @@
         <java.version>8</java.version>
         <scm.url>git@github.com:leassis/crud-endpoints.git</scm.url>
         <project.scm.id>github</project.scm.id>
-        <instancio.version>2.2.0</instancio.version>
+        <instancio.version>4.3.2</instancio.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
     </properties>
